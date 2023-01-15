@@ -7,7 +7,7 @@ if __name__ == '__main__':
     queue = Queue()
 
     tracker = TrackerGame()
-    tracker.fileNamesConfig.videoSource = 'ROBO_3.mp4'
+    tracker.file_names_config.video_source = 'ROBO_3.mp4'
     tracker.debug = True
 
     p = Process(target=tracker.start, args=(queue,))
