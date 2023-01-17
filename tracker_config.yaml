@@ -1,0 +1,79 @@
+
+
+# Pickle file that contains fields
+fields_path: "./saved_fields"
+# Json file that contains names of all fields
+fields_names_path: "./fields_names.json"
+#video_source: 0
+video_source: '../examples/ROBO_7.mp4'
+object_timeout: 30
+pos_limit_x: [-50, 3600]
+pos_limit_y: [-50, 2100]
+map_virtual_corners: [
+  [0, 0],
+  [0, 2100],
+  [3600, 2100],
+  [3600, 0]
+]
+
+#map_virtual_corners: [
+#  [0, 348],
+#  [522, 348],
+#  [522, 0],
+#  [0, 0]
+#]
+
+# Kalman filter
+kalman_filter:
+    # Sampling rate
+    dt: 1
+    # Acceleration magnitude
+    u: 0.0
+    acc_noise_mag: 0.003
+    measurement_noise_x: 0.6
+    measurement_noise_y: 0.6
+
+# AruCo detector
+aruco_detector:
+    # Minimum window for binarization
+    # Too small a window makes whole tags the same color
+    adaptive_thresh_win_size_min: 10
+    # Maximum window for binarization
+    # Too large a window rounds the corners of the bits on the tag
+    adaptive_thresh_win_size_max: 23
+    # Bottom for thresholding
+    # Too low a bottom causes too many candidates, too high distorts tags (probably also dependent on contrast)
+    adaptive_thresh_constant: 7
+    # Minimum size of candidates for tags
+    # Too low checks too many candidates and affects performance
+    min_marker_perimeter_rate: 0.04
+    # Maximum size of candidates for tags
+    # Slightly affects performance, but there are usually not too many large candidates
+    max_marker_perimeter_rate: 0.1
+    # Algorithm crops tag and upsamples it to x pixels per cell
+    # Affects performance
+    perspective_remove_pixel_per_cell: 30
+    # Algorithm crops each cell and looks only at the center
+    # Larger factor crops more
+    perspective_remove_ignored_margin_per_cell: 0.30
+    # Limit how close two tags can be
+    # Because ours can be very close, we have to set this low, which can mean that
+    # the same tag is detected twice, which we can filter out later
+    min_marker_distance_rate: 0.001
+
+# Camera
+camera:
+  # Camera parameters for removing distortion
+  # These are the parameters for the camera used in the lab
+  k1: -0.4077
+  k2: 0.2827
+  k3: -0.1436
+  p1: 6.6668e-4
+  p2: -0.0025
+  fx: 1.509369848235880e+03
+  fy: 1.509243126646947e+03
+  cx: 9.678725207348843e+02
+  cy: 5.356599023732050e+02
+  # Scaling factors
+  scale0: 0.954
+  scale1: 0.00001

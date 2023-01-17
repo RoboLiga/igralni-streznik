@@ -1,35 +1,32 @@
 import logging
-from typing import Dict, List
+from typing import Dict
 
 from sledilnik.classes.Field import Field
-from sledilnik.classes.MovableObject import MovableObject
+from sledilnik.classes.ObjectTracker import ObjectTracker
 from sledilnik.classes.TrackerLiveData import TrackerLiveData
-
-from so2.entities.ConfigMap import ConfigMap
-from so2.entities.Hive import Hive
-from so2.enums.HiveTypeEnum import HiveType
 
 
 class StateLiveData:
-    def __init__(self):
+    def __init__(self, config):
         self.logger = logging.getLogger('sledenje-objektom.StateLiveData')
-        self.robots: List[MovableObject] = []
-        self.hives: List[Hive] = []
+        self.config = config
         self.fields: Dict[str, Field] = {}
-        self.zones: Dict[str, Field] = {}
-        self.config: ConfigMap = ConfigMap()
+        self.robots: Dict[int, ObjectTracker] = {}
+        self.objects: Dict[str, Dict[int, ObjectTracker]] = {}
 
-    def parseTrackerLiveData(self, data: TrackerLiveData):
+    def parse(self, data: TrackerLiveData):
         self.fields = data.fields
-        self.sortMovableObjects(data.objects)
-
-    def sortMovableObjects(self, objects: Dict[int, MovableObject]):
         self.robots = []
-        self.hives = []
-        for key, obj in objects.items():
-            if key in self.config.healthyHives:
-                self.hives.append(Hive(obj, HiveType.HIVE_HEALTHY))
-            elif key in self.config.diseasedHives:
-                self.hives.append(Hive(obj, HiveType.HIVE_DISEASED))
+        self.objects = {}
+
+        # Loop through all objects
+        for key, obj in data.objects.items():
+            # Check if object is a robot
+            if key in self.config['robots']:
+                self.robots[key] = obj
             else:
-                self.robots.append(obj)
+                # Loop through all object types
+                for object_type in self.config['objects']:
+                    # Check if object is of this type
+                    if key in self.config['objects'][object_type]:
+                        self.objects[object_type][key] = obj

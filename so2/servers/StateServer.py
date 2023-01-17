@@ -19,27 +19,26 @@ class StateServer(Server):
         tracker: Tracker server
     """
 
-    def __init__(self, tracker_server: TrackerServer):
+    def __init__(self, tracker_server: TrackerServer, config: dict):
         Server.__init__(self)
         self.logger = logging.getLogger('sledenje-objektom.StateServer')
         self.tracker: TrackerServer = tracker_server
-        self.gameLiveData: StateLiveData = StateLiveData()
+        self.state: StateLiveData = StateLiveData(config)
 
     def _run(self):
         self.logger.info('State server started.')
         while True:
             self.tracker.updated.wait()
 
-            self.gameLiveData.parseTrackerLiveData(self.tracker.state)
-            self.state: StateLiveData = self.gameLiveData
+            self.state.parse(self.tracker.state)
 
             self.updated.set()
 
             gevent.sleep(0.01)
             self.updated.clear()
 
-    def get_distance(self, p1: Point, p2: Point) -> float:
-        """
-        Evklidska razdalja med dvema točkama na poligonu.
-        """
-        return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)
+    # def get_distance(self, p1: Point, p2: Point) -> float:
+    #     """
+    #     Evklidska razdalja med dvema točkama na poligonu.
+    #     """
+    #     return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)

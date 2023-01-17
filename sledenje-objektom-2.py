@@ -3,6 +3,7 @@
 import logging
 from multiprocessing import freeze_support
 
+import yaml
 from gevent.pywsgi import WSGIServer
 
 from so2.restapi.App import RESTAPI
@@ -10,10 +11,15 @@ from so2.servers.StateServer import StateServer
 from so2.servers.TrackerServer import TrackerServer
 
 
-def createLogger() -> logging.Logger:
+def read_config(config_path):
+    with open(config_path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def create_logger() -> logging.Logger:
     # create a logger
-    loggerA = logging.getLogger('sledenje-objektom')
-    loggerA.setLevel(logging.ERROR)
+    l = logging.getLogger('sledenje-objektom')
+    l.setLevel(logging.ERROR)
 
     # create a file handler
     file_handler = logging.FileHandler('example.log')
@@ -29,22 +35,26 @@ def createLogger() -> logging.Logger:
     console_handler.setFormatter(formatter)
 
     # add handlers to the logger
-    loggerA.addHandler(file_handler)
-    loggerA.addHandler(console_handler)
+    l.addHandler(file_handler)
+    l.addHandler(console_handler)
 
-    return loggerA
+    return l
 
 
 if __name__ == '__main__':
-    logger = createLogger()
+    logger = create_logger()
     logger.info('Started')
+
+    config = read_config('./game_config.yaml')
+
     freeze_support()
     game_servers = {}
 
     tracker_server = TrackerServer()
+    tracker_server.tracker.config['video_source'] = 0
     tracker_server.start()
 
-    state_server = StateServer(tracker_server)
+    state_server = StateServer(tracker_server, config)
     state_server.start()
 
     rest_app = RESTAPI(game_servers, state_server)

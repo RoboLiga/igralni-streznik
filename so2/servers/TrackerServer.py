@@ -26,7 +26,6 @@ class TrackerServer(Server):
 
         self.tracker = TrackerGame()
         self.tracker.debug = True
-        self.tracker.file_names_config.video_source = 'http://192.168.1.117/mjpg/video.mjpg'
 
         self.p = Process(target=self.tracker.start, args=(self.queue,))
 

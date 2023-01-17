@@ -21,7 +21,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     @app.route("/game/<string:game_id>", methods=["GET"])
     def game(game_id):
         if game_id in game_servers:
-            return game_servers[game_id].reprJSON()
+            return game_servers[game_id].to_json()
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
 
@@ -53,7 +53,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def alter_score(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            return game_server.alterScore(request.json)
+            return game_server.alter_score(request.json)
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
 
@@ -61,7 +61,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def start_game(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            game_server.gameData.gameOn = True
+            game_server.game_data.game_on = True
             return {"gameOn": "True"}
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
@@ -70,7 +70,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def stop_game(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            game_server.gameData.gameOn = False
+            game_server.game_data.game_on = False
             return {"gameOn": "False"}
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
@@ -79,8 +79,8 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def set_time(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            game_server.setGameTime(request.json['gameTime'])
-            return {"gameTime": game_server.gameData.config.gameTime}
+            game_server.set_game_time(request.json['gameTime'])
+            return {"gameTime": game_server.game_data.config.game_time}
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
 
@@ -88,7 +88,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def set_teams(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            game_server.setTeams(request.json['teams'])
+            game_server.set_teams(request.json['teams'])
             return request.data
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
@@ -96,7 +96,7 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     @app.route("/teams", methods=['GET'])
     def get_teams():
         return json.dumps(
-            [{"id": teamId, "name": teamName} for teamId, teamName in state_server.gameLiveData.config.teams.items()]
+            [{"id": teamId, "name": teamName} for teamId, teamName in state_server.state.config['robots'].items()]
             , ensure_ascii=False
         ).encode('utf8')
 
@@ -104,11 +104,11 @@ def RESTAPI(game_servers: Dict[str, GameServer], state_server: StateServer):
     def pause_switch(game_id):
         if game_id in game_servers:
             game_server = game_servers[game_id]
-            if game_server.gameData.gameOn:
-                game_server.pauseGame()
+            if game_server.game_data.game_on:
+                game_server.pause_game()
                 return {"gameOn": "False"}
             else:
-                game_server.unpauseGame()
+                game_server.unpause_game()
                 return {"gameOn": "True"}
         else:
             return error("Igra s takšnim id-jem ne obstaja!")
