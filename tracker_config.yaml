@@ -3,7 +3,9 @@
 # Pickle file that contains fields
 fields_path: "./saved_fields"
 # Json file that contains names of all fields
-fields_names_path: "./fields_names.json"
+field_names:
+  - poligon
+  - test1
 #video_source: 0
 video_source: '../examples/ROBO_7.mp4'
 object_timeout: 30

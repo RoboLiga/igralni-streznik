@@ -1,4 +1,5 @@
-gameTime: 100
+game: Beekeepers
+game_time: 100
 
 points:
   home: 1
@@ -7,7 +8,7 @@ points:
   diseased: -2
 
 objects:
-  healthyHives:
+  healthy_hives:
     - 9
     - 22
     - 27
@@ -16,7 +17,7 @@ objects:
     - 40
     - 43
     - 47
-  diseasedHives:
+  diseased_hives:
     - 10
     - 24
     - 30

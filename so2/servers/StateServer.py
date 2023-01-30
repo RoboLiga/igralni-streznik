@@ -5,7 +5,7 @@ import math
 import gevent
 from sledilnik.classes import Point
 
-from so2.entities.StateLiveData import StateLiveData
+from so2.classes.StateLiveData import StateLiveData
 from so2.servers.Server import Server
 from so2.servers.TrackerServer import TrackerServer
 

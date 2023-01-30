@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
 import logging
+import random
+import importlib
+
 from timeit import default_timer as timer
 from typing import Dict, List
 from uuid import uuid4
 
 import gevent
+from flask_restx import Api, fields
 
-from so2.entities.StateLiveData import StateLiveData
+from sledilnik.classes.Field import Field
+from sledilnik.classes.ObjectTracker import ObjectTracker
+from so2.classes.StateLiveData import StateLiveData
+from so2.classes.Team import Team
 from so2.servers.Server import Server
-from so2.entities.Team import Team
 from so2.servers.StateServer import StateServer
 
 
@@ -33,8 +39,11 @@ class GameServer(Server):
         self.key: str = "very_secret_key"
 
         self.game_on: bool = False
+        self.game_paused: bool = False
+
         self.game_time: int = config['game_time']
         self.start_time: float = timer()
+        self.time_left = config['game_time']
         self.pause_total_time: float = 0.0
         self.pause_start_time: float = 0.0
 
@@ -49,26 +58,29 @@ class GameServer(Server):
         while True:
             # Wait for state server to update state
             self.state_server.updated.wait()
-            self.stateData: StateLiveData = self.state_server.state
+            self.state_data: StateLiveData = self.state_server.state
 
             # print(self.id, self.gameData.gameOn)
-            if self.game_data.game_on:
-                # TODO: Compute score
-                # self.game_data.check_hive_zones(self.stateData)
-                # self.game_data.compute_score(self.stateData)
+            if self.game_on and not self.game_paused:
+                self.compute_score()
+                self.update_time_left()
                 # stop the game when no time left
-                if self.game_data.check_time_left() <= 0:
-                    self.game_data.game_on = False
-                    self.game_data.start_time = timer()
+                if self.time_left <= 0:
+                    self.game_on = False
                     break
-            else:
-                self.game_data.start_time = timer()
 
             self.updated.set()
             gevent.sleep(0.01)
             self.updated.clear()
 
-    def set_teams(self, team_1, team_2):
+    def compute_score(self):
+        """
+        Needs to me implemented by extending class
+        """
+        self.team_1.score = random.randint(-100, 100)
+        self.team_2.score = random.randint(-100, 100)
+
+    def set_teams(self, team_1: int, team_2: int):
         self.team_1 = self.init_team(team_1)
         self.team_2 = self.init_team(team_2)
 
@@ -79,58 +91,91 @@ class GameServer(Server):
             logging.error("Team with specified id does not exist in config!")
             raise Exception("Team with specified id does not exist in config!")
 
-    def alter_score(self, scores: Dict[str, int]):
+    def alter_score(self, team_1_score: int, team_2_score: int):
 
-        self.game_data.alter_score[0] = scores['team1']
-        self.game_data.alter_score[1] = scores['team2']
+        self.alter_score[0] = team_1_score
+        self.alter_score[1] = team_2_score
 
         return {
-            'team1': self.game_data.team_1.score,
-            'team2': self.game_data.team_2.score
+            'team1': self.team_1.score,
+            'team2': self.team_2.score
         }
 
     def start_game(self):
-        self.team_1.score = 0
-        self.team_2.score = 0
-        self.start_time = timer()
-        self.pause_start_time = 0.0
-        self.pause_total_time = 0.0
-        self.game_on = True
+        if not self.game_on:
+            self.team_1.score = 0
+            self.team_2.score = 0
+            self.start_time = timer()
+            self.pause_start_time = 0.0
+            self.pause_total_time = 0.0
+            self.game_on = True
+            self.game_paused = False
 
     def pause_game(self):
         if self.game_on:
-            self.pause_start_time = timer()
-            self.game_on = False
-
-    def unpause_game(self):
-        if not self.game_on:
-            self.game_on = True
-            self.pause_total_time += timer() - self.pause_start_time
-            self.pause_start_time = 0.0
+            if self.game_paused:
+                self.pause_start_time = timer()
+                self.game_paused = False
+            else:
+                self.game_paused = True
+                self.pause_total_time += timer() - self.pause_start_time
+                self.pause_start_time = 0.0
 
     def stop_game(self):
-        self.game_data.game_on = False
+        self.game_on = False
 
-    def check_time_left(self):
-        if self.game_on:
-            return self.game_time - (timer() - self.start_time) + self.pause_total_time
-        return self.game_time
+    def update_time_left(self):
+        self.time_left = self.game_time - (timer() - self.start_time - self.pause_total_time)
 
     def set_game_time(self, game_time: int):
         self.game_time = game_time
 
-    def to_json(self, state_live_data: StateLiveData):
+    def to_json(self):
         return {
-            "objects": {
-                "robots": {str(robot.id): robot.to_json() for robot in state_live_data.robots}
+            'id': self.id,
+            'game_on': self.game_on,
+            'game_paused': self.game_paused,
+            'time_left': self.time_left,
+            'team_1': self.team_1.to_json(),
+            'team_2': self.team_2.to_json(),
+            'robots': {str(r.id): r.to_json() for r in self.state_data.robots.values()},
+            'objects': {
+                str(ot): {
+                    str(o.id): o.to_json() for o in self.state_data.objects[ot].values()
+                } for ot in self.state_data.objects
             },
-            "fields": {
-                "field": state_live_data.fields_names["field"].to_json()
-            },
-            "teams": {
-                "team_1": self.team_1.to_json(),
-                "team_2": self.team_2.to_json()
-            },
-            "time_left": self.check_time_left(),
-            "game_on": self.game_on
+            'fields': {f_name: f.to_json() for f_name, f in self.state_data.fields.items()}
         }
+
+    @classmethod
+    def to_model(cls, api: Api, tracker_config: Dict, game_config: Dict):
+        return api.model('GameServer', {
+            'id': fields.String,
+            'game_on': fields.Boolean,
+            'game_paused': fields.Boolean,
+            'time_left': fields.Float,
+            'team_1': fields.Nested(Team.to_model(api)),
+            'team_2': fields.Nested(Team.to_model(api)),
+            'robots': fields.Nested(api.model(
+                'Robots',
+                {str(r): fields.Nested(ObjectTracker.to_model(api), required=False) for r in game_config['robots']})
+            ),
+            'objects': fields.Nested(
+                api.model(
+                    'Objects',
+                    {str(ot): fields.Nested(
+                        api.model(
+                            'ObjectType',
+                            {
+                                str(o): fields.Nested(ObjectTracker.to_model(api), required=False)
+                                for o in game_config['objects'][ot]
+                            }
+                        )
+                    ) for ot in game_config['objects']}
+                )
+            ),
+            'fields': fields.Nested(api.model(
+                'Fields',
+                {f: fields.Nested(Field.to_model(api), required=False) for f in tracker_config['field_names']})
+            )
+        })

@@ -2,7 +2,7 @@ from typing import List, Dict
 
 from sledilnik.classes.ObjectTracker import ObjectTracker
 
-from so2.entities.ConfigMap import ConfigMap
+from so2.classes.ConfigMap import ConfigMap
 from so2.enums.ConfigEnum import Config
 from so2.enums.FieldsNamesEnum import FieldsNames
 from so2.enums.HiveTypeEnum import HiveType

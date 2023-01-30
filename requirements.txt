@@ -2,3 +2,4 @@ shapely
 gevent
 orjson
 flask
+flask_restx

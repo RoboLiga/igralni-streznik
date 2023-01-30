@@ -16,7 +16,7 @@ class StateLiveData:
 
     def parse(self, data: TrackerLiveData):
         self.fields = data.fields
-        self.robots = []
+        self.robots = {}
         self.objects = {}
 
         # Loop through all objects
@@ -27,6 +27,8 @@ class StateLiveData:
             else:
                 # Loop through all object types
                 for object_type in self.config['objects']:
+                    if object_type not in self.objects:
+                        self.objects[object_type] = {}
                     # Check if object is of this type
                     if key in self.config['objects'][object_type]:
                         self.objects[object_type][key] = obj
