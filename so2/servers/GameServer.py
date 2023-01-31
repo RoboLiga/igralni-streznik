@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import random
-import importlib
-
 from timeit import default_timer as timer
 from typing import Dict, List
 from uuid import uuid4
@@ -28,11 +26,11 @@ class GameServer(Server):
         key (string): Key for write permissions
     """
 
-    def __init__(self, state_server: StateServer, config: Dict, team_1: int, team_2: int):
+    def __init__(self, state_server: StateServer, game_config: Dict, team_1: int, team_2: int):
         Server.__init__(self)
 
         self.logger = logging.getLogger('sledenje-objektom.GameServer')
-        self.config = config
+        self.config = game_config
 
         self.state_server: StateServer = state_server
         self.id: str = str(uuid4())[:4]
@@ -41,14 +39,14 @@ class GameServer(Server):
         self.game_on: bool = False
         self.game_paused: bool = False
 
-        self.game_time: int = config['game_time']
+        self.game_time: int = game_config['game_time']
         self.start_time: float = timer()
-        self.time_left = config['game_time']
+        self.time_left = game_config['game_time']
         self.pause_total_time: float = 0.0
         self.pause_start_time: float = 0.0
 
         self.time: float = timer()
-        self.alter_score: List[int] = [0, 0]
+        self.alter_score_list: List[int] = [0, 0]
 
         self.team_1 = self.init_team(team_1)
         self.team_2 = self.init_team(team_2)
@@ -63,6 +61,8 @@ class GameServer(Server):
             # print(self.id, self.gameData.gameOn)
             if self.game_on and not self.game_paused:
                 self.compute_score()
+                self.team_1.score += self.alter_score_list[0]
+                self.team_2.score += self.alter_score_list[1]
                 self.update_time_left()
                 # stop the game when no time left
                 if self.time_left <= 0:
@@ -92,14 +92,8 @@ class GameServer(Server):
             raise Exception("Team with specified id does not exist in config!")
 
     def alter_score(self, team_1_score: int, team_2_score: int):
-
-        self.alter_score[0] = team_1_score
-        self.alter_score[1] = team_2_score
-
-        return {
-            'team1': self.team_1.score,
-            'team2': self.team_2.score
-        }
+        self.alter_score_list[0] = team_1_score
+        self.alter_score_list[1] = team_2_score
 
     def start_game(self):
         if not self.game_on:
@@ -176,6 +170,6 @@ class GameServer(Server):
             ),
             'fields': fields.Nested(api.model(
                 'Fields',
-                {f: fields.Nested(Field.to_model(api), required=False) for f in tracker_config['field_names']})
+                {f: fields.Nested(Field.to_model(api), required=False) for f in tracker_config['fields_names']})
             )
         })

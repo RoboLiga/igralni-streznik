@@ -6,8 +6,6 @@ class Team:
         self.id = team_id
         self.name = name
         self.score = 0
-        self.scoreAdjust = 0
-        # self.healthyHives: Dict[int, int] = {}
 
     def to_json(self):
         return {

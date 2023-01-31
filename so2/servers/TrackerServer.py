@@ -25,7 +25,6 @@ class TrackerServer(Server):
         self.queue = Queue()
 
         self.tracker = TrackerGame()
-        self.tracker.debug = True
 
         self.p = Process(target=self.tracker.start, args=(self.queue,))
 

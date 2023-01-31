@@ -38,7 +38,10 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
                 team1Id = int(api.payload['team_1'])
                 team2Id = int(api.payload['team_2'])
 
-                GameClass = getattr(importlib.import_module(f"so2.games.{game_config['game']}"), game_config['game'])
+                GameClass = getattr(
+                    importlib.import_module(f"so2.games.{game_config['game'].lower()}.{game_config['game']}"),
+                    game_config['game']
+                )
                 new_game = GameClass(state_server, game_config, team1Id, team2Id)
 
                 game_servers[new_game.id] = new_game
@@ -93,6 +96,7 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
             """
             if game_id in game_servers:
                 game_server = game_servers[game_id]
+                game_server.alter_score(api.payload['team_1'], api.payload['team_2'])
                 return game_server.to_json()
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")

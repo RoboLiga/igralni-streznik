@@ -53,7 +53,7 @@ if __name__ == '__main__':
     game_servers = {}
 
     tracker_server = TrackerServer()
-    tracker_server.tracker.config['video_source'] = 0
+    # tracker_server.tracker.config['video_source'] = 0
     tracker_server.start()
 
     state_server = StateServer(tracker_server, game_config)
