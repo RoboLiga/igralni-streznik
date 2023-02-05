@@ -1,4 +1,5 @@
 debug: true
+undistort: false
 # Pickle file that contains fields
 fields_path: "./saved_fields"
 # Json file that contains names of all fields
@@ -11,14 +12,15 @@ fields_names:
   - neutral_zone
 #video_source: 0
 video_source: 'ROBO_7.mp4'
+# video_source: 'http://192.168.0.100/mjpg/video.mjpg'
 object_timeout: 30
 pos_limit_x: [-50, 3600]
 pos_limit_y: [-50, 2100]
 map_virtual_corners: [
   [0, 0],
-  [0, 2100],
+  [3600, 0],
   [3600, 2100],
-  [3600, 0]
+  [0, 2100]
 ]
 
 #map_virtual_corners: [
