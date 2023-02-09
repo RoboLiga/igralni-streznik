@@ -15,6 +15,8 @@ class Beekeepers(GameServer):
         for hive_id in game_config['objects']['healthy_hives'] + game_config['objects']['diseased_hives']:
             self.hive_zones[hive_id] = set()
 
+        self.secures_hives = set()
+
         self.team_1_healthy_hives_score = 0
         self.team_2_healthy_hives_score = 0
 
@@ -23,8 +25,17 @@ class Beekeepers(GameServer):
         Computes score for each team
         """
 
+        # Count diseased hives
+        team_1_diseased_count = 0
+        team_2_diseased_count = 0
+
+
         # Check if hives positions, update hive_zones and score
         for healthy_hive in self.state_data.objects['healthy_hives'].values():
+
+            if healthy_hive.id in self.secures_hives:
+                continue
+
             if check_if_object_in_area(healthy_hive.position, self.state_data.fields['team_1_zone']):
                 self.hive_zones[healthy_hive.id].add('team_1_zone')
             elif check_if_object_in_area(healthy_hive.position, self.state_data.fields['team_2_zone']):
@@ -33,6 +44,8 @@ class Beekeepers(GameServer):
                 self.hive_zones[healthy_hive.id].add('neutral_zone')
 
             if check_if_object_in_area(healthy_hive.position, self.state_data.fields['team_1_basket']):
+                self.logger.debug("Healthy hive %s is in team 1 basket" % healthy_hive.id)
+                self.secures_hives.add(healthy_hive.id)
                 if 'team_2_zone' in self.hive_zones[healthy_hive.id]:
                     self.team_1_healthy_hives_score += self.state_data.config['points']['enemy']
                 elif 'neutral_zone' in self.hive_zones[healthy_hive.id]:
@@ -40,17 +53,16 @@ class Beekeepers(GameServer):
                 else:
                     self.team_1_healthy_hives_score += self.state_data.config['points']['home']
 
-            elif check_if_object_in_area(healthy_hive.position, self.state_data.fields['team_2_basket']):
+            if check_if_object_in_area(healthy_hive.position, self.state_data.fields['team_2_basket']):
+                self.logger.debug("Healthy hive %s is in team 2 basket" % healthy_hive.id)
+                self.secures_hives.add(healthy_hive.id)
+
                 if 'team_1_zone' in self.hive_zones[healthy_hive.id]:
                     self.team_1_healthy_hives_score += self.state_data.config['points']['enemy']
                 elif 'neutral_zone' in self.hive_zones[healthy_hive.id]:
                     self.team_1_healthy_hives_score += self.state_data.config['points']['neutral']
                 else:
                     self.team_1_healthy_hives_score += self.state_data.config['points']['home']
-
-        # Count diseased hives
-        team_1_diseased_count = 0
-        team_2_diseased_count = 0
 
         for diseased_hive in self.state_data.objects['diseased_hives'].values():
             if check_if_object_in_area(diseased_hive.position, self.state_data.fields['team_1_zone']):
