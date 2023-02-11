@@ -6,7 +6,7 @@ from multiprocessing import Process, Queue
 import gevent
 from sledilnik.TrackerGame import TrackerGame
 
-from so2.servers.Server import Server
+from src.servers.Server import Server
 
 
 class TrackerServer(Server):

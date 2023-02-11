@@ -16,7 +16,7 @@ First, you need to edit the configuration file `game_config.yaml` to your needs.
 `tracker-setup.py` to mark the game area and fields. After that, you can run the server with:
 
 ```bash
-python main.py
+python main.py --game <game_name>
 ```
 
 This will start a tracker process and a server process. The tracker process will track the robots and

@@ -1,16 +1,76 @@
 # -*- coding: utf-8 -*-
 import importlib
+import logging
+from multiprocessing import freeze_support
 from queue import Queue
 from typing import Dict
 
 from flask import Flask, jsonify
 from flask_restx import Resource, Api, fields
+from gevent.pywsgi import WSGIServer
 
-from so2.servers.GameServer import GameServer
-from so2.servers.StateServer import StateServer
+from src.servers.GameServer import GameServer
+from src.servers.StateServer import StateServer
+from src.servers.TrackerServer import TrackerServer
+from src.utils import read_config, create_logger
 
 
-def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, tracker_config: Dict, game_config: Dict):
+class GameApi:
+    def __init__(self, game_name: str):
+        freeze_support()
+        self.game_config: dict = read_config(f'./src/games/{game_name.lower()}/game_config.yaml')
+
+        logger = create_logger(logging.getLevelName(self.game_config['log_level']))
+        logger.info('Started')
+
+        self.game_name: str = game_name.capitalize()
+        self.game_servers: Dict[str, GameServer] = {}
+        self.server_queue: Queue = Queue()
+
+        self.tracker_server = TrackerServer()
+        self.tracker_server.start()
+
+        self.state_server: StateServer = StateServer(self.tracker_server, self.game_config)
+        self.state_server.start()
+
+        self.rest_server = WSGIServer(('0.0.0.0', 8088), create_api(self))
+
+    def start(self):
+        self.rest_server.serve_forever()
+
+    def create_game_server(self, team_1, team_2, game_id=None) -> GameServer:
+        GameClass = getattr(
+            importlib.import_module(f"src.games.{self.game_name.lower()}.{self.game_name}"),
+            self.game_name
+        )
+        new_game = GameClass(self.state_server, self.game_config, team_1, team_2)
+        new_game.start()
+
+        if game_id is not None:
+            new_game.id = game_id
+
+        self.server_queue.put(new_game.id)
+        self.game_servers[new_game.id] = new_game
+
+        # TODO: This needs to be changed.
+        if len(self.game_servers) >= 50:
+            self.game_servers.pop(self.server_queue.get())
+
+        return new_game
+
+    def start_test_game_server(self) -> GameServer:
+        team_ids = list(self.game_config['robots'].keys())
+        team_1 = team_ids[0]
+        team_2 = team_ids[1]
+
+        test_game_server = self.create_game_server(team_1, team_2, 'test')
+        test_game_server.game_time = 99999
+        test_game_server.start_game()
+
+        return test_game_server
+
+
+def create_api(game_api: GameApi):
     app = Flask(__name__, instance_relative_config=True)
     api = Api(app,
               version='1.0',
@@ -20,7 +80,6 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
 
     game_ns = api.namespace('game', description='Game operations')
     team_ns = api.namespace('team', description='Team operations')
-    server_queue = Queue()
 
     @game_ns.route('/')
     class GameList(Resource):
@@ -35,23 +94,10 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
             Create a new game
             """
             try:
-                team1Id = int(api.payload['team_1'])
-                team2Id = int(api.payload['team_2'])
+                team_1 = int(api.payload['team_1'])
+                team_2 = int(api.payload['team_2'])
 
-                GameClass = getattr(
-                    importlib.import_module(f"so2.games.{game_config['game'].lower()}.{game_config['game']}"),
-                    game_config['game']
-                )
-                new_game = GameClass(state_server, game_config, team1Id, team2Id)
-
-                game_servers[new_game.id] = new_game
-                new_game.start()
-
-                server_queue.put(new_game.id)
-
-                if len(game_servers) >= 50:
-                    game_servers.pop(server_queue.get())
-
+                new_game = game_api.create_game_server(team_1, team_2)
                 return new_game.id
 
             except Exception as e:
@@ -62,20 +108,20 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
             """
             List all games
             """
-            games = [game_id for game_id in game_servers.keys()]
+            games = [game_id for game_id in game_api.game_servers.keys()]
             return jsonify(games)
 
     @game_ns.route('/<string:game_id>')
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class Game(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def get(self, game_id):
             """
             Fetch a game
             """
-            if game_id in game_servers:
-                return game_servers[game_id].to_json()
+            if game_id in game_api.game_servers:
+                return game_api.game_servers[game_id].to_json()
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
@@ -89,13 +135,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
         })
 
         @game_ns.expect(alter_score_model)
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Alter score of the game
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.alter_score(api.payload['team_1'], api.payload['team_2'])
                 return game_server.to_json()
             else:
@@ -106,13 +152,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
     @game_ns.param('game_id', 'The game identifier')
     class GameStart(Resource):
 
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Start the game
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.start_game()
                 return game_server.to_json()
             else:
@@ -122,13 +168,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class GameStop(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Stop the game
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.game_on = False
                 return game_server.to_json()
             else:
@@ -141,13 +187,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
         @game_ns.expect(api.model('SetTime', {
             'game_time': fields.Integer(required=True, description='Game time in seconds'),
         }))
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Set game time
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.set_game_time(api.payload['game_time'])
                 return game_server.to_json()
             else:
@@ -161,13 +207,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
             'team_1': fields.Integer(required=True, description='Team 1 ID'),
             'team_2': fields.Integer(required=True, description='Team 2 ID'),
         }))
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Set teams
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.set_teams(api.payload['team_1'], api.payload['team_2'])
                 return game_server.to_json()
             else:
@@ -177,13 +223,13 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class GamePause(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, tracker_config, game_config))
+        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Pause or unpause the game
             """
-            if game_id in game_servers:
-                game_server = game_servers[game_id]
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
                 game_server.pause_game()
                 return game_server.to_json()
             else:
@@ -202,7 +248,7 @@ def create_api(game_servers: Dict[str, GameServer], state_server: StateServer, t
             Get list of teams
             """
             return jsonify(
-                [{"id": teamId, "name": teamName} for teamId, teamName in state_server.state.config['robots'].items()],
+                [{"id": teamId, "name": teamName} for teamId, teamName in game_api.game_config['robots'].items()],
                 ensure_ascii=False
             )
 
