@@ -60,7 +60,7 @@ class GameServer(Server):
 
             # print(self.id, self.gameData.gameOn)
             if self.game_on and not self.game_paused:
-                self.compute_score()
+                self.update_game_state()
                 self.team_1.score += self.alter_score_list[0]
                 self.team_2.score += self.alter_score_list[1]
                 self.update_time_left()
@@ -73,7 +73,7 @@ class GameServer(Server):
             gevent.sleep(0.01)
             self.updated.clear()
 
-    def compute_score(self):
+    def update_game_state(self):
         """
         Needs to me implemented by extending class
         """

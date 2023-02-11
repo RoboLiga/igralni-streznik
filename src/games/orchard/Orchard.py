@@ -20,7 +20,7 @@ class Orchard(GameServer):
         self.team_1_healthy_hives_score = 0
         self.team_2_healthy_hives_score = 0
 
-    def compute_score(self):
+    def update_game_state(self):
         """
         Computes score for each team
         """
