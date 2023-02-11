@@ -1,14 +1,14 @@
 import logging
 
-from so2.Utils import check_if_object_in_area
-from so2.servers.GameServer import GameServer
+from src.utils import check_if_object_in_area
+from src.servers.GameServer import GameServer
 
 
-class Beekeepers(GameServer):
+class Orchard(GameServer):
     def __init__(self, state_server, game_config, team_1, team_2):
         GameServer.__init__(self, state_server, game_config, team_1, team_2)
 
-        self.logger = logging.getLogger('sledenje-objektom.Beekeepers')
+        self.logger = logging.getLogger('games.Orchard')
 
         # Hive zones is used to keep track in which zones the hives have been.
         self.hive_zones = {}
@@ -28,7 +28,6 @@ class Beekeepers(GameServer):
         # Count diseased hives
         team_1_diseased_count = 0
         team_2_diseased_count = 0
-
 
         # Check if hives positions, update hive_zones and score
         for healthy_hive in self.state_data.objects['healthy_hives'].values():
@@ -71,6 +70,6 @@ class Beekeepers(GameServer):
                 team_2_diseased_count += 1
 
         self.team_1.score = self.team_1_healthy_hives_score + \
-            team_1_diseased_count * self.state_data.config['points']['diseased']
+                            team_1_diseased_count * self.state_data.config['points']['diseased']
         self.team_2.score = self.team_2_healthy_hives_score + \
-            team_2_diseased_count * self.state_data.config['points']['diseased']
+                            team_2_diseased_count * self.state_data.config['points']['diseased']

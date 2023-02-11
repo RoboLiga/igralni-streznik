@@ -1,0 +1,26 @@
+game: Example
+game_time: 100
+log_level: 'INFO'
+
+points:
+  good: 1
+  bad: -2
+
+fields_names:
+  - game_field
+  - team_1_basket
+  - team_2_basket
+
+objects:
+  category_1:
+    - 9
+    - 22
+  category_2:
+    - 10
+    - 24
+
+robots:
+  0: VeryCoolTeamName
+  2: EvenBetterTeamName
+  5: VeryGoodExample
+

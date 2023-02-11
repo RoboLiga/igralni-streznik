@@ -10,10 +10,10 @@ from flask_restx import Api, fields
 
 from sledilnik.classes.Field import Field
 from sledilnik.classes.ObjectTracker import ObjectTracker
-from so2.classes.StateLiveData import StateLiveData
-from so2.classes.Team import Team
-from so2.servers.Server import Server
-from so2.servers.StateServer import StateServer
+from src.classes.StateLiveData import StateLiveData
+from src.classes.Team import Team
+from src.servers.Server import Server
+from src.servers.StateServer import StateServer
 
 
 class GameServer(Server):
@@ -29,7 +29,7 @@ class GameServer(Server):
     def __init__(self, state_server: StateServer, game_config: Dict, team_1: int, team_2: int):
         Server.__init__(self)
 
-        self.logger = logging.getLogger('sledenje-objektom.GameServer')
+        self.logger = logging.getLogger('servers.GameServer')
         self.config = game_config
 
         self.state_server: StateServer = state_server
@@ -142,7 +142,7 @@ class GameServer(Server):
         }
 
     @classmethod
-    def to_model(cls, api: Api, tracker_config: Dict, game_config: Dict):
+    def to_model(cls, api: Api, game_config: Dict):
         return api.model('GameServer', {
             'id': fields.String,
             'game_on': fields.Boolean,
@@ -170,6 +170,6 @@ class GameServer(Server):
             ),
             'fields': fields.Nested(api.model(
                 'Fields',
-                {f: fields.Nested(Field.to_model(api), required=False) for f in tracker_config['fields_names']})
+                {f: fields.Nested(Field.to_model(api), required=False) for f in game_config['fields_names']})
             )
         })

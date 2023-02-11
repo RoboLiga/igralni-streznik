@@ -1,18 +1,13 @@
 debug: true
 undistort: false
+
 # Pickle file that contains fields
 fields_path: "./saved_fields"
-# Json file that contains names of all fields
-fields_names:
-  - poligon
-  - team_1_basket
-  - team_2_basket
-  - team_1_zone
-  - team_2_zone
-  - neutral_zone
-#video_source: 0
+
+# video_source: 0
 video_source: 'ROBO_7.mp4'
 # video_source: 'http://192.168.0.100/mjpg/video.mjpg'
+
 object_timeout: 30
 pos_limit_x: [-50, 3600]
 pos_limit_y: [-50, 2100]
@@ -22,13 +17,6 @@ map_virtual_corners: [
   [3600, 2100],
   [0, 2100]
 ]
-
-#map_virtual_corners: [
-#  [0, 348],
-#  [522, 348],
-#  [522, 0],
-#  [0, 0]
-#]
 
 # Kalman filter
 kalman_filter:
