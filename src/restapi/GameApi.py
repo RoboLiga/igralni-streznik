@@ -24,6 +24,11 @@ class GameApi:
         logger.info('Started')
 
         self.game_name: str = game_name.capitalize()
+        self.GameClass = getattr(
+            importlib.import_module(f"src.games.{self.game_name.lower()}.{self.game_name}"),
+            self.game_name
+        )
+
         self.game_servers: Dict[str, GameServer] = {}
         self.server_queue: Queue = Queue()
 
@@ -39,11 +44,7 @@ class GameApi:
         self.rest_server.serve_forever()
 
     def create_game_server(self, team_1, team_2, game_id=None) -> GameServer:
-        GameClass = getattr(
-            importlib.import_module(f"src.games.{self.game_name.lower()}.{self.game_name}"),
-            self.game_name
-        )
-        new_game = GameClass(self.state_server, self.game_config, team_1, team_2)
+        new_game = self.GameClass(self.state_server, self.game_config, team_1, team_2)
         new_game.start()
 
         if game_id is not None:
@@ -115,7 +116,7 @@ def create_api(game_api: GameApi):
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class Game(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def get(self, game_id):
             """
             Fetch a game
@@ -135,7 +136,7 @@ def create_api(game_api: GameApi):
         })
 
         @game_ns.expect(alter_score_model)
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Alter score of the game
@@ -152,7 +153,7 @@ def create_api(game_api: GameApi):
     @game_ns.param('game_id', 'The game identifier')
     class GameStart(Resource):
 
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Start the game
@@ -168,7 +169,7 @@ def create_api(game_api: GameApi):
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class GameStop(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Stop the game
@@ -187,7 +188,7 @@ def create_api(game_api: GameApi):
         @game_ns.expect(api.model('SetTime', {
             'game_time': fields.Integer(required=True, description='Game time in seconds'),
         }))
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Set game time
@@ -207,7 +208,7 @@ def create_api(game_api: GameApi):
             'team_1': fields.Integer(required=True, description='Team 1 ID'),
             'team_2': fields.Integer(required=True, description='Team 2 ID'),
         }))
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Set teams
@@ -223,7 +224,7 @@ def create_api(game_api: GameApi):
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
     class GamePause(Resource):
-        @game_ns.response(200, "Success", GameServer.to_model(api, game_api.game_config))
+        @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         def put(self, game_id):
             """
             Pause or unpause the game
