@@ -48,7 +48,7 @@ def main(argv):
         raise Exception("Game name not specified.")
 
     if setup:
-        TrackerSetup(tracker_config_path, f'./games/{game_name}/game_config.yaml').start()
+        TrackerSetup(tracker_config_path, f'./src/games/{game_name.lower()}/game_config.yaml').start()
     else:
         game_api = GameApi(game_name)
         if create_test_game:

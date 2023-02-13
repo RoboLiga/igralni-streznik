@@ -1,0 +1,50 @@
+game_time: 100
+robot_time: 30
+log_level: 'DEBUG'
+
+charging_time: 5
+charging_amount: 30
+
+points:
+  good: 1
+  bad: -1
+
+fields_names:
+  - game_field
+  - blue_basket
+  - red_basket
+  - charging_station_1
+  - charging_station_2
+
+objects:
+  good_ore:
+    - 6
+    - 9
+    - 22
+    - 27
+    - 29
+    - 36
+    - 40
+    - 43
+    - 47
+  bad_ore:
+    - 24
+    - 30
+    - 42
+
+robots:
+  10: Tester
+  0: Acvirki
+  2: Unicode Abuse
+  5: Razhroščevalci
+  12: Domen^3
+  14: Bee#
+  18: Zero Latency
+  19: Pršut in teran
+  25: LASPP
+  32: Remove Support
+  33: Electric Boogaloo
+  35: Kolebnica
+  39: the-org
+  41: Cloud
+

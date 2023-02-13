@@ -2,7 +2,7 @@ debug: true
 undistort: false
 
 # Pickle file that contains fields
-fields_path: "./saved_fields"
+fields_path: "./saved_fields.pickle"
 
 # video_source: 0
 video_source: 'ROBO_7.mp4'
