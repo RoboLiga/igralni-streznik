@@ -3,7 +3,7 @@ import importlib
 import logging
 from multiprocessing import freeze_support
 from queue import Queue
-from typing import Dict
+from typing import Dict, List
 
 from flask import Flask, jsonify
 from flask_restx import Resource, Api, fields
@@ -43,15 +43,15 @@ class GameApi:
     def start(self):
         self.rest_server.serve_forever()
 
-    def create_game_server(self, team_1, team_2, game_id=None) -> GameServer:
-        new_game = self.GameClass(self.state_server, self.game_config, team_1, team_2)
+    def create_game_server(self, teams: List[int], game_id=None) -> GameServer:
+        new_game = self.GameClass(self.state_server, self.game_config, teams)
         new_game.start()
 
         if game_id is not None:
-            new_game.id = game_id
+            new_game.robot_id = game_id
 
-        self.server_queue.put(new_game.id)
-        self.game_servers[new_game.id] = new_game
+        self.server_queue.put(new_game.robot_id)
+        self.game_servers[new_game.robot_id] = new_game
 
         # TODO: This needs to be changed.
         if len(self.game_servers) >= 50:
@@ -61,10 +61,8 @@ class GameApi:
 
     def start_test_game_server(self) -> GameServer:
         team_ids = list(self.game_config['robots'].keys())
-        team_1 = team_ids[0]
-        team_2 = team_ids[1]
 
-        test_game_server = self.create_game_server(team_1, team_2, 'test')
+        test_game_server = self.create_game_server(team_ids[0:2], 'test')
         test_game_server.game_time = 99999
         test_game_server.start_game()
 
@@ -98,7 +96,7 @@ def create_api(game_api: GameApi):
                 team_1 = int(api.payload['team_1'])
                 team_2 = int(api.payload['team_2'])
 
-                new_game = game_api.create_game_server(team_1, team_2)
+                new_game = game_api.create_game_server([team_1, team_2])
                 return new_game.id
 
             except Exception as e:
@@ -231,7 +229,11 @@ def create_api(game_api: GameApi):
             """
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
-                game_server.pause_game()
+                if game_server.game_paused:
+                    game_server.resume_game()
+                else:
+                    game_server.pause_game()
+
                 return game_server.to_json()
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
