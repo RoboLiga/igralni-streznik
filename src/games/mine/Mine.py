@@ -13,6 +13,10 @@ class Mine(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
         GameServer.__init__(self, state_server, game_config, teams)
         self.logger = logging.getLogger('games.Mine')
+        self.charging_stations = {
+            1: None,
+            2: None
+        }
 
     def init_team(self, robot_id: int, color: str):
         if robot_id in self.config['robots']:
@@ -45,13 +49,23 @@ class Mine(GameServer):
         self.compute_score()
 
     def check_charging_stations(self):
-        for robot in self.state_data.robots.values():
-            if check_if_object_in_area(robot.position, self.state_data.fields['charging_station_1']):
-                self.teams[robot.id].charge(self.config['charging_time'], self.config['charging_amount'])
-            elif check_if_object_in_area(robot.position, self.state_data.fields['charging_station_2']):
-                self.teams[robot.id].charge(self.config['charging_time'], self.config['charging_amount'])
-            else:
-                self.teams[robot.id].stop_charging()
+        for team in self.teams.values():
+            if team.robot_id in self.state_data.robots:
+                robot = self.state_data.robots[team.robot_id]
+                if check_if_object_in_area(robot.position, self.state_data.fields['charging_station_1']) and \
+                        (self.charging_stations[1] is None or self.charging_stations[1] == robot.id):
+                    self.teams[robot.id].charge(self.config['charging_time'])
+                    self.charging_stations[1] = robot.id
+                elif check_if_object_in_area(robot.position, self.state_data.fields['charging_station_2']) and \
+                        (self.charging_stations[2] is None or self.charging_stations[2] == robot.id):
+                    self.teams[robot.id].charge(self.config['charging_time'])
+                    self.charging_stations[2] = robot.id
+                else:
+                    if self.charging_stations[1] == robot.id:
+                        self.charging_stations[1] = None
+                    elif self.charging_stations[2] == robot.id:
+                        self.charging_stations[2] = None
+                    self.teams[robot.id].stop_charging()
 
     def compute_score(self):
 
