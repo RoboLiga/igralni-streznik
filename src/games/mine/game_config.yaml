@@ -1,9 +1,9 @@
 game_time: 100
-robot_time: 30
+robot_time: 25
 log_level: 'DEBUG'
 
 charging_time: 5
-charging_amount: 30
+charging_amount: 25
 
 points:
   good: 1

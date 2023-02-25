@@ -48,10 +48,10 @@ class GameApi:
         new_game.start()
 
         if game_id is not None:
-            new_game.robot_id = game_id
+            new_game.id = game_id
 
-        self.server_queue.put(new_game.robot_id)
-        self.game_servers[new_game.robot_id] = new_game
+        self.server_queue.put(new_game.id)
+        self.game_servers[new_game.id] = new_game
 
         # TODO: This needs to be changed.
         if len(self.game_servers) >= 50:
@@ -73,8 +73,8 @@ def create_api(game_api: GameApi):
     app = Flask(__name__, instance_relative_config=True)
     api = Api(app,
               version='1.0',
-              title='Robo liga API',
-              description='A simple API for Robo Liga games.'
+              title='Robo liga FRI API',
+              description='A simple API for Robo Liga FRI games.'
               )
 
     game_ns = api.namespace('game', description='Game operations')
@@ -245,14 +245,14 @@ def create_api(game_api: GameApi):
             'name': fields.String(required=True, description='Team name'),
         })
 
-        @team_ns.response(200, 'Success', fields.List(fields.Nested(team_model)))
+        @team_ns.marshal_list_with(api.model('TeamsIdsNames', team_model), code=200)
         def get(self):
             """
             Get list of teams
             """
-            return jsonify(
-                [{"id": teamId, "name": teamName} for teamId, teamName in game_api.game_config['robots'].items()],
-                ensure_ascii=False
-            )
+            testItems = [{"id": teamId, "name": teamName} for teamId, teamName in
+                         game_api.game_config['robots'].items()]
+
+            return testItems
 
     return app
