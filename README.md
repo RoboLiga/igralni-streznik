@@ -12,9 +12,11 @@ pip install -r requirements.txt
 
 ## Usage
 
-First, you need to edit the configuration file `game_config.yaml` to your needs. Then, you need to first run
-`tracker-setup.py` to mark the game area and fields. After that, you can run the server with:
-
+First, you need to edit the configuration file `game_config.yaml` to your needs. Then, you need to first run:
+```shell
+python main.py --game <game_name> --setup
+```
+to mark the game area and fields. After that, you can run the server with:
 ```bash
 python main.py --game <game_name>
 ```
