@@ -150,7 +150,7 @@ class GameLiveData:
     def reprJSON(self, stateLiveData: StateLiveData):
         return {
             "objects": {
-                "hives": {str(hive.id): hive.reprJSON(stateLiveData.config, self.hiveZones) for hive in
+                "hives": {str(stateLiveData.idRandomization[hive.id]): hive.reprJSON(stateLiveData.config, self.hiveZones, idOverride=stateLiveData.idRandomization[hive.id]) for hive in
                           stateLiveData.hives},
                 "robots": {str(robot.id): robot.reprJSON() for robot in stateLiveData.robots}
             },

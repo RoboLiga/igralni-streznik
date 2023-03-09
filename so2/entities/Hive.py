@@ -33,11 +33,12 @@ class Hive(MovableObject):
             else:
                 return config.points[Config.HOME.value]
 
-    def reprJSON(self, config: ConfigMap, hiveZones: Dict[int, List[FieldsNames]]):
+    def reprJSON(self, config: ConfigMap, hiveZones: Dict[int, List[FieldsNames]], idOverride: int):
         json = super().reprJSON()
         json["type"] = self.hiveType.value
         json["points"] = {
             "team1": self.getPoints(Config.TEAM1, config, hiveZones),
             "team2": self.getPoints(Config.TEAM2, config, hiveZones)
         }
+        json["id"] = idOverride
         return json
