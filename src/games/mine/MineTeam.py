@@ -30,12 +30,7 @@ class MineTeam(Team):
 
     def to_json(self):
         result = super().to_json()
-
-        current_fuel = self.fuel_full - self.timer.get()
-        if current_fuel <= 0:
-            current_fuel = 0
-
-        result['fuel'] = current_fuel
+        result['fuel'] = max(self.fuel_full - self.timer.get(), 0)
         result['charging'] = self.charging
         return result
 

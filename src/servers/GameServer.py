@@ -117,7 +117,7 @@ class GameServer(Server):
             'id': self.id,
             'game_on': self.game_on,
             'game_paused': self.game_paused,
-            'time_left': self.game_time - self.timer.get(),
+            'time_left': max(self.game_time - self.timer.get(), 0),
             'teams': {str(t.robot_id): t.to_json() for t in self.teams.values()},
             'robots': {str(r.id): r.to_json() for r in self.state_data.robots.values()},
             'objects': {
