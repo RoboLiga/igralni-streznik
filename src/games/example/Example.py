@@ -5,14 +5,13 @@ from src.servers.GameServer import GameServer
 
 
 class Example(GameServer):
-    def __init__(self, state_server, game_config, team_1, team_2):
-        GameServer.__init__(self, state_server, game_config, team_1, team_2)
+    def __init__(self, state_server, game_config, teams):
+        GameServer.__init__(self, state_server, game_config, teams)
         self.logger = logging.getLogger('games.Example')
 
     def update_game_state(self):
         """
         Computes score for each team
         """
-        self.team_1.score = randint(0, 100)
-        self.team_2.score = randint(0, 100)
-        pass
+        for team in self.teams.values():
+            team.score = randint(-100, 100)
