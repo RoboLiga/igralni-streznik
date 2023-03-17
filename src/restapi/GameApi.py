@@ -6,6 +6,7 @@ from queue import Queue
 from typing import Dict, List
 
 from flask import Flask, jsonify
+from flask_httpauth import HTTPBasicAuth
 from flask_restx import Resource, Api, fields
 from gevent.pywsgi import WSGIServer
 
@@ -76,9 +77,15 @@ def create_api(game_api: GameApi):
               title='Robo liga FRI API',
               description='A simple API for Robo Liga FRI games.'
               )
+    auth = HTTPBasicAuth()
 
     game_ns = api.namespace('game', description='Game operations')
     team_ns = api.namespace('team', description='Team operations')
+
+    @auth.verify_password
+    def verify_password(username, password):
+        if username in game_api.game_servers and game_api.game_servers.get(username).password == password:
+            return username
 
     @game_ns.route('/')
     class GameList(Resource):
@@ -87,7 +94,10 @@ def create_api(game_api: GameApi):
             'team_1': fields.Integer(required=True, description='Team 1 ID'),
             'team_2': fields.Integer(required=True, description='Team 2 ID'),
         }))
-        @game_ns.response(200, "Success", fields.String)
+        @game_ns.response(200, "Success", api.model('GameIdPassword', {
+            'game_id': fields.String(required=True, description='Game ID'),
+            'password': fields.String(required=True, description='Game password')
+        }))
         def post(self):
             """
             Create a new game
@@ -97,7 +107,7 @@ def create_api(game_api: GameApi):
                 team_2 = int(api.payload['team_2'])
 
                 new_game = game_api.create_game_server([team_1, team_2])
-                return new_game.id
+                return {'game_id': new_game.id, 'password': new_game.password}
 
             except Exception as e:
                 api.abort(500, f"Unknown error occurred: {e}")
@@ -135,6 +145,7 @@ def create_api(game_api: GameApi):
 
         @game_ns.expect(alter_score_model)
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Alter score of the game
@@ -152,6 +163,7 @@ def create_api(game_api: GameApi):
     class GameStart(Resource):
 
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Start the game
@@ -168,6 +180,7 @@ def create_api(game_api: GameApi):
     @game_ns.param('game_id', 'The game identifier')
     class GameStop(Resource):
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Stop the game
@@ -187,6 +200,7 @@ def create_api(game_api: GameApi):
             'game_time': fields.Integer(required=True, description='Game time in seconds'),
         }))
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Set game time
@@ -207,6 +221,7 @@ def create_api(game_api: GameApi):
             'team_2': fields.Integer(required=True, description='Team 2 ID'),
         }))
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Set teams
@@ -223,6 +238,7 @@ def create_api(game_api: GameApi):
     @game_ns.param('game_id', 'The game identifier')
     class GamePause(Resource):
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        @auth.login_required()
         def put(self, game_id):
             """
             Pause or unpause the game

@@ -14,6 +14,7 @@ from src.classes.Team import Team
 from src.classes.Timer import Timer
 from src.servers.Server import Server
 from src.servers.StateServer import StateServer
+from random_username.generate import generate_username
 
 
 class GameServer(Server):
@@ -34,7 +35,7 @@ class GameServer(Server):
 
         self.state_server: StateServer = state_server
         self.id: str = str(uuid4())[:4]
-        self.key: str = "very_secret_key"
+        self.password: str = generate_username(1)[0]
 
         self.game_on: bool = False
         self.game_paused: bool = False
