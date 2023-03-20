@@ -64,6 +64,7 @@ class GameApi:
         team_ids = list(self.game_config['robots'].keys())
 
         test_game_server = self.create_game_server(team_ids[0:2], 'test')
+        test_game_server.password = 'test'
         test_game_server.game_time = 99999
         test_game_server.start_game()
 

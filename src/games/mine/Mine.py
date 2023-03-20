@@ -1,5 +1,6 @@
 import logging
 from typing import Dict, List
+from uuid import uuid4
 
 from flask_restx import Api, fields
 
@@ -17,6 +18,7 @@ class Mine(GameServer):
             1: None,
             2: None
         }
+        self.objects_uuid = {}
 
     def init_team(self, robot_id: int, color: str):
         if robot_id in self.config['robots']:
@@ -27,6 +29,11 @@ class Mine(GameServer):
             raise Exception("Team with specified id does not exist in config!")
 
     def start_game(self):
+        # Map each object id to a random uuid
+        for ot in self.config['objects']:
+            for o in self.config['objects'][ot]:
+                self.objects_uuid[str(o)] = str(uuid4())[:8]
+
         for team in self.teams.values():
             team.timer.start()
 
@@ -87,8 +94,11 @@ class Mine(GameServer):
     def to_json(self):
         result = super().to_json()
         merged_objects = {}
-        for ot in result['objects'].values():
-            merged_objects.update(ot)
+        for ot in result['objects']:
+            for o in result['objects'][ot]:
+                tmp = result['objects'][ot][o]
+                tmp['id'] = self.objects_uuid[o]
+                merged_objects[self.objects_uuid[o]] = tmp
 
         result['objects'] = merged_objects
         return result
