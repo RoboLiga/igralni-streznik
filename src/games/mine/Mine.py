@@ -19,6 +19,7 @@ class Mine(GameServer):
             2: None
         }
         self.objects_uuid = {}
+        self.generate_objects_uuids()
 
     def init_team(self, robot_id: int, color: str):
         if robot_id in self.config['robots']:
@@ -29,15 +30,17 @@ class Mine(GameServer):
             raise Exception("Team with specified id does not exist in config!")
 
     def start_game(self):
-        # Map each object id to a random uuid
-        for ot in self.config['objects']:
-            for o in self.config['objects'][ot]:
-                self.objects_uuid[str(o)] = str(uuid4())[:8]
-
+        self.generate_objects_uuids()
         for team in self.teams.values():
             team.timer.start()
 
         super().start_game()
+
+    def generate_objects_uuids(self):
+        # Map each object id to a random uuid
+        for ot in self.config['objects']:
+            for o in self.config['objects'][ot]:
+                self.objects_uuid[str(o)] = str(uuid4())[:8]
 
     def pause_game(self):
         for team in self.teams.values():
