@@ -3,4 +3,6 @@ gevent
 orjson
 flask
 flask_restx
+flask_httpauth
 pyyaml
+random_username

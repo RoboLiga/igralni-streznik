@@ -7,7 +7,7 @@ charging_amount: 25
 
 points:
   good: 1
-  bad: -1
+  bad: -2
 
 fields_names:
   - game_field
@@ -18,33 +18,28 @@ fields_names:
 
 objects:
   good_ore:
-    - 6
-    - 9
-    - 22
-    - 27
-    - 29
     - 36
+    - 39
     - 40
+    - 41
+    - 42
     - 43
     - 47
   bad_ore:
-    - 24
+    - 29
     - 30
-    - 42
+    - 32
+    - 35
 
 robots:
-  10: Tester
-  0: Acvirki
-  2: Unicode Abuse
-  5: Razhroščevalci
-  12: Domen^3
-  14: Bee#
-  18: Zero Latency
-  19: Pršut in teran
-  25: LASPP
-  32: Remove Support
-  33: Electric Boogaloo
-  35: Kolebnica
-  39: the-org
-  41: Cloud
+  0:  Hansformers
+  5:  Unicode Abuse
+  9:  Gold Diggers
+  10: Bumblebee
+  12: PeΨ
+  14: ocvrti čipi
+  18: Lolek in Bolek
+  19: Sussy Bakas
+  22: LASPP
+  24: VimEscapees
 

@@ -6,7 +6,7 @@ fields_path: "./saved_fields.pickle"
 
 # video_source: 0
 # video_source: 'ROBO_7.mp4'
-video_source: 'http://192.168.0.100/mjpg/video.mjpg'
+video_source: 'http://192.168.0.2/mjpg/video.mjpg'
 
 object_timeout: 30
 pos_limit_x: [-50, 3600]
