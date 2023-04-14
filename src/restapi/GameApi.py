@@ -188,7 +188,7 @@ def create_api(game_api: GameApi):
             """
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
-                game_server.game_on = False
+                game_server.stop_game()
                 return game_server.to_json()
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")

@@ -108,6 +108,7 @@ class GameServer(Server):
             self.game_paused = False
 
     def stop_game(self):
+        self.pause_game()
         self.game_on = False
 
     def set_game_time(self, game_time: int):
