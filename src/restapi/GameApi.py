@@ -227,12 +227,19 @@ def create_api(game_api: GameApi):
             """
             Set teams
             """
-            if game_id in game_api.game_servers:
-                game_server = game_api.game_servers[game_id]
-                game_server.set_teams(api.payload['team_1'], api.payload['team_2'])
-                return game_server.to_json()
-            else:
+
+            if game_id not in game_api.game_servers:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
+
+            game_server = game_api.game_servers[game_id]
+
+            teams = [api.payload['team_1'], api.payload['team_2']]
+            for team in teams:
+                if team not in game_server.config['robots']:
+                    api.abort(404, f"Team with id {team} doesn't exist")
+
+            game_server.set_teams(teams)
+            return game_server.to_json()
 
     @game_ns.route('/<string:game_id>/pause')
     @game_ns.response(404, 'Game not found')
