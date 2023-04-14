@@ -59,8 +59,8 @@ class GameServer(Server):
                 self.update_game_state()
 
                 # stop the game when no time left
-                if self.timer.get() <= 0:
-                    self.game_on = False
+                if self.game_time_left() <= 0:
+                    self.stop_game()
                     break
 
             self.updated.set()
@@ -121,12 +121,15 @@ class GameServer(Server):
     def set_game_time(self, game_time: int):
         self.game_time = game_time
 
+    def game_time_left(self):
+        return max(self.game_time - self.timer.get(), 0)
+
     def to_json(self):
         return {
             'id': self.id,
             'game_on': self.game_on,
             'game_paused': self.game_paused,
-            'time_left': max(self.game_time - self.timer.get(), 0),
+            'time_left': self.game_time_left(),
             'teams': {str(t.robot_id): t.to_json() for t in self.teams.values()},
             'robots': {str(r.id): r.to_json() for r in self.state_data.robots.values()},
             'objects': {
