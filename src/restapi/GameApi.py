@@ -139,9 +139,8 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
-    @game_ns.route('/<string:game_id>/score')
+    @game_ns.route('/score')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GameScore(Resource):
         alter_score_model = api.model('AlterScore', {
             5: fields.Integer(required=True, description='Amount to add to team 5 score'),
@@ -151,10 +150,11 @@ def create_api(game_api: GameApi):
         @game_ns.expect(alter_score_model)
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Alter score of the game
             """
+            game_id = auth.username()
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
                 try:
@@ -165,17 +165,17 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
-    @game_ns.route('/<string:game_id>/start')
+    @game_ns.route('/start')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GameStart(Resource):
 
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Start the game
             """
+            game_id = auth.username()
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
                 game_server.start_game()
@@ -183,16 +183,16 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
-    @game_ns.route('/<string:game_id>/stop')
+    @game_ns.route('/stop')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GameStop(Resource):
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Stop the game
             """
+            game_id = auth.username()
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
                 game_server.stop_game()
@@ -200,19 +200,19 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
-    @game_ns.route('/<string:game_id>/time')
+    @game_ns.route('/time')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GameTime(Resource):
         @game_ns.expect(api.model('SetTime', {
             'game_time': fields.Integer(required=True, description='Game time in seconds'),
         }))
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Set game time
             """
+            game_id = auth.username()
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
                 game_server.set_game_time(api.payload['game_time'])
@@ -220,9 +220,8 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
-    @game_ns.route('/<string:game_id>/teams')
+    @game_ns.route('/teams')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GameTeams(Resource):
         @game_ns.expect(api.model('SetTeams', {
             'team_1': fields.Integer(required=True, description='Team 1 ID'),
@@ -230,11 +229,11 @@ def create_api(game_api: GameApi):
         }))
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Set teams
             """
-
+            game_id = auth.username()
             if game_id not in game_api.game_servers:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
@@ -248,16 +247,16 @@ def create_api(game_api: GameApi):
             game_server.set_teams(teams)
             return game_server.to_json()
 
-    @game_ns.route('/<string:game_id>/pause')
+    @game_ns.route('/pause')
     @game_ns.response(404, 'Game not found')
-    @game_ns.param('game_id', 'The game identifier')
     class GamePause(Resource):
         @game_ns.response(200, "Success", game_api.GameClass.to_model(api, game_api.game_config))
         @auth.login_required()
-        def put(self, game_id):
+        def put(self):
             """
             Pause or unpause the game
             """
+            game_id = auth.username()
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
                 if game_server.game_paused:
