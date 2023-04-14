@@ -12,6 +12,7 @@ from sledilnik.classes.ObjectTracker import ObjectTracker
 from src.classes.StateLiveData import StateLiveData
 from src.classes.Team import Team
 from src.classes.Timer import Timer
+from src.restapi.ApiError import ApiError
 from src.servers.Server import Server
 from src.servers.StateServer import StateServer
 from random_username.generate import generate_username
@@ -84,9 +85,15 @@ class GameServer(Server):
             logging.error("Team with specified id does not exist in config!")
             raise Exception("Team with specified id does not exist in config!")
 
-    def alter_score(self, team_1_score: int, team_2_score: int):
-        self.teams[team_1_score].score_bias = team_1_score
-        self.teams[team_2_score].score_bias = team_2_score
+    def alter_score(self, team_scores: Dict[str, int]):
+        for team_id, score_bias in team_scores.items():
+            logging.info("Altering score for team %s by %d" % (team_id, score_bias))
+            team_id = int(team_id)
+            if team_id in self.teams:
+                self.teams[team_id].score_bias += score_bias
+            else:
+                logging.error("Team with specified id is not part of the game!")
+                raise ApiError("Team with specified id is not part of the game!", 400)
 
     def start_game(self):
         if not self.game_on:

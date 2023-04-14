@@ -10,6 +10,7 @@ from flask_httpauth import HTTPBasicAuth
 from flask_restx import Resource, Api, fields
 from gevent.pywsgi import WSGIServer
 
+from src.restapi.ApiError import ApiError
 from src.servers.GameServer import GameServer
 from src.servers.StateServer import StateServer
 from src.servers.TrackerServer import TrackerServer
@@ -140,8 +141,8 @@ def create_api(game_api: GameApi):
     @game_ns.param('game_id', 'The game identifier')
     class GameScore(Resource):
         alter_score_model = api.model('AlterScore', {
-            'team_1': fields.Integer(required=True, description='Team 1 ID'),
-            'team_2': fields.Integer(required=True, description='Team 2 ID'),
+            5: fields.Integer(required=True, description='Amount to add to team 5 score'),
+            8: fields.Integer(required=True, description='Amount to add to team 8 score'),
         })
 
         @game_ns.expect(alter_score_model)
@@ -153,7 +154,10 @@ def create_api(game_api: GameApi):
             """
             if game_id in game_api.game_servers:
                 game_server = game_api.game_servers[game_id]
-                game_server.alter_score(api.payload['team_1'], api.payload['team_2'])
+                try:
+                    game_server.alter_score(api.payload)
+                except ApiError as e:
+                    api.abort(e.status_code, e.message)
                 return game_server.to_json()
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
