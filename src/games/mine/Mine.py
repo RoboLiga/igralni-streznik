@@ -55,13 +55,16 @@ class Mine(GameServer):
         super().resume_game()
 
     def update_game_state(self):
-        self.check_charging_stations()
+        self.check_robots()
         self.compute_score()
 
-    def check_charging_stations(self):
+    def check_robots(self):
         for team in self.teams.values():
-            if team.robot_id in self.state_data.robots:
+            # Check if robot is alive and has fuel
+            if team.robot_id in self.state_data.robots and team.fuel() > 0:
                 robot = self.state_data.robots[team.robot_id]
+
+                # Check if robot is charging
                 if check_if_object_in_area(robot.position, self.state_data.fields['charging_station_1']) and \
                         (self.charging_stations[1] is None or self.charging_stations[1] == robot.id):
                     self.teams[robot.id].charge(self.config['charging_time'])

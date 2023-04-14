@@ -28,9 +28,12 @@ class MineTeam(Team):
             self.timer.start()
             self.timer.pause()
 
+    def fuel(self):
+        return max(self.fuel_full - self.timer.get(), 0)
+
     def to_json(self):
         result = super().to_json()
-        result['fuel'] = max(self.fuel_full - self.timer.get(), 0)
+        result['fuel'] = self.fuel()
         result['charging'] = self.charging
         return result
 
