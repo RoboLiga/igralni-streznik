@@ -6,6 +6,7 @@ from queue import Queue
 from typing import Dict, List
 
 from flask import Flask, jsonify
+from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
 from flask_restx import Resource, Api, fields
 from gevent.pywsgi import WSGIServer
@@ -80,6 +81,8 @@ def create_api(game_api: GameApi):
               description='A simple API for Robo Liga FRI games.'
               )
     auth = HTTPBasicAuth()
+
+    CORS(app, supports_credentials=True)
 
     game_ns = api.namespace('game', description='Game operations')
     team_ns = api.namespace('team', description='Team operations')
