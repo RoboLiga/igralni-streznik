@@ -23,7 +23,7 @@ class GameApi:
         freeze_support()
         self.game_config: dict = read_config(f'./src/games/{game_name.lower()}/game_config.yaml')
 
-        logger = create_logger(logging.getLevelName(self.game_config['log_level']))
+        logger = create_logger('restapi.GameApi', self.game_config['log_level'])
         logger.info('Started')
 
         self.game_name: str = game_name.capitalize()
@@ -35,7 +35,7 @@ class GameApi:
         self.game_servers: Dict[str, GameServer] = {}
         self.server_queue: Queue = Queue()
 
-        self.tracker_server = TrackerServer()
+        self.tracker_server = TrackerServer(self.game_config)
         self.tracker_server.start()
 
         self.state_server: StateServer = StateServer(self.tracker_server, self.game_config)

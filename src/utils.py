@@ -35,10 +35,10 @@ def read_config(config_path):
         return yaml.safe_load(f)
 
 
-def create_logger(log_level: int) -> logging.Logger:
+def create_logger(name: str, log_level: str) -> logging.Logger:
     # create a logger
-    logger = logging.getLogger('game-server')
-    logger.setLevel(log_level)
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.getLevelName(log_level))
 
     # create a file handler
     file_handler = logging.FileHandler('game-server.log')

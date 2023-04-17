@@ -17,6 +17,8 @@ from src.servers.Server import Server
 from src.servers.StateServer import StateServer
 from random_username.generate import generate_username
 
+from src.utils import create_logger
+
 
 class GameServer(Server):
     """Game state for particular game
@@ -31,7 +33,7 @@ class GameServer(Server):
     def __init__(self, state_server: StateServer, game_config: Dict, teams: List[int]):
         Server.__init__(self)
 
-        self.logger = logging.getLogger('servers.GameServer')
+        self.logger = create_logger('servers.GameServer', game_config['log_level'])
         self.config = game_config
 
         self.state_server: StateServer = state_server

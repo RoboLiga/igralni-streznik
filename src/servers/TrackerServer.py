@@ -7,6 +7,7 @@ import gevent
 from sledilnik.TrackerGame import TrackerGame
 
 from src.servers.Server import Server
+from src.utils import create_logger
 
 
 class TrackerServer(Server):
@@ -16,10 +17,10 @@ class TrackerServer(Server):
 
     """
 
-    def __init__(self):
+    def __init__(self, game_config: dict):
         Server.__init__(self)
 
-        self.logger = logging.getLogger('sledenje-objektom.TrackerServer')
+        self.logger = create_logger('servers.TrackerServer', game_config['log_level'])
 
         self.state = None
         self.queue = Queue()

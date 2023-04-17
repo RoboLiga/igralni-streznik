@@ -8,6 +8,7 @@ from sledilnik.classes import Point
 from src.classes.StateLiveData import StateLiveData
 from src.servers.Server import Server
 from src.servers.TrackerServer import TrackerServer
+from src.utils import create_logger
 
 
 class StateServer(Server):
@@ -19,11 +20,11 @@ class StateServer(Server):
         tracker: Tracker server
     """
 
-    def __init__(self, tracker_server: TrackerServer, config: dict):
+    def __init__(self, tracker_server: TrackerServer, game_config: dict):
         Server.__init__(self)
-        self.logger = logging.getLogger('sledenje-objektom.StateServer')
+        self.logger = create_logger('servers.StateServer', game_config['log_level'])
         self.tracker: TrackerServer = tracker_server
-        self.state: StateLiveData = StateLiveData(config)
+        self.state: StateLiveData = StateLiveData(game_config)
 
     def _run(self):
         self.logger.info('State server started.')

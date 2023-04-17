@@ -7,13 +7,14 @@ from flask_restx import Api, fields
 from sledilnik.classes.ObjectTracker import ObjectTracker
 from src.games.mine.MineTeam import MineTeam
 from src.servers.GameServer import GameServer
-from src.utils import check_if_object_in_area
+from src.utils import check_if_object_in_area, create_logger
 
 
 class Mine(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
         GameServer.__init__(self, state_server, game_config, teams)
-        self.logger = logging.getLogger('games.Mine')
+        self.logger = create_logger('games.Mine', game_config['log_level'])
+
         self.charging_stations = {
             1: None,
             2: None
