@@ -13,5 +13,6 @@ class Example(GameServer):
         """
         Computes score for each team
         """
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             team.score = randint(-100, 100)

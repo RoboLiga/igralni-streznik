@@ -99,7 +99,8 @@ class GameServer(Server):
 
     def start_game(self):
         if not self.game_on:
-            for team in self.teams.values():
+            for team_key in self.teams:
+                team = self.teams[team_key]
                 team.score = 0
 
             self.timer.start()

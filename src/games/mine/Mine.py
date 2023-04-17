@@ -32,7 +32,8 @@ class Mine(GameServer):
 
     def start_game(self):
         self.generate_objects_uuids()
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             team.timer.start()
 
         super().start_game()
@@ -44,13 +45,15 @@ class Mine(GameServer):
                 self.objects_uuid[str(o)] = str(uuid4())[:8]
 
     def pause_game(self):
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             team.timer.pause()
 
         super().pause_game()
 
     def resume_game(self):
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             team.timer.resume()
 
         super().resume_game()
@@ -85,16 +88,19 @@ class Mine(GameServer):
     def compute_score(self):
 
         scores = {}
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             scores[team.robot_id] = 0
 
         for good_ore in self.state_data.objects['good_ore'].values():
-            for team in self.teams.values():
+            for team_key in self.teams:
+                team = self.teams[team_key]
                 if check_if_object_in_area(good_ore.position, self.state_data.fields[f'{team.color}_basket']):
                     scores[team.robot_id] += self.config['points']['good']
 
         for bad_ore in self.state_data.objects['bad_ore'].values():
-            for team in self.teams.values():
+            for team_key in self.teams:
+                team = self.teams[team_key]
                 if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
                     scores[team.robot_id] += self.config['points']['bad']
 
