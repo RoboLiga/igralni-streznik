@@ -59,7 +59,8 @@ class Mine(GameServer):
         self.compute_score()
 
     def check_robots(self):
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             # Check if robot is alive and has fuel
             if team.robot_id in self.state_data.robots and team.fuel() > 0:
                 robot = self.state_data.robots[team.robot_id]
@@ -96,7 +97,8 @@ class Mine(GameServer):
                 if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
                     scores[team.robot_id] += self.config['points']['bad']
 
-        for team in self.teams.values():
+        for team_key in self.teams:
+            team = self.teams[team_key]
             team.score = scores.get(team.robot_id, 0)
 
     def to_json(self):
