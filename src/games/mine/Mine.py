@@ -31,7 +31,14 @@ class Mine(GameServer):
             raise Exception("Team with specified id does not exist in config!")
 
     def start_game(self):
+        # Generate new uuids for objects
         self.generate_objects_uuids()
+
+        # Reset charging stations
+        for charging_station_id in self.charging_stations:
+            self.charging_stations[charging_station_id] = None
+
+        # Start timers
         for team_key in self.teams:
             team = self.teams[team_key]
             team.timer.start()
