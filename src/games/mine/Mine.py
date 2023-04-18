@@ -5,6 +5,7 @@ from uuid import uuid4
 from flask_restx import Api, fields
 
 from sledilnik.classes.ObjectTracker import ObjectTracker
+from src.classes.Timer import Timer
 from src.games.mine.MineTeam import MineTeam
 from src.servers.GameServer import GameServer
 from src.utils import check_if_object_in_area, create_logger
@@ -31,19 +32,25 @@ class Mine(GameServer):
             raise Exception("Team with specified id does not exist in config!")
 
     def start_game(self):
-        # Generate new uuids for objects
-        self.generate_objects_uuids()
+        if not self.game_on:
+            # Generate new uuids for objects
+            self.generate_objects_uuids()
 
-        # Reset charging stations
-        for charging_station_id in self.charging_stations:
-            self.charging_stations[charging_station_id] = None
+            # Reset charging stations
+            self.charging_stations = {
+                1: None,
+                2: None
+            }
 
-        # Start timers
-        for team_key in self.teams:
-            team = self.teams[team_key]
-            team.timer.start()
+            # Start timers
+            for team_key in self.teams:
+                team = self.teams[team_key]
+                team.timer = Timer()
+                team.charging_timer = Timer()
+                team.charging = False
+                team.timer.start()
 
-        super().start_game()
+            super().start_game()
 
     def generate_objects_uuids(self):
         # Map each object id to a random uuid

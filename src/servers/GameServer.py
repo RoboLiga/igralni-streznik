@@ -103,6 +103,7 @@ class GameServer(Server):
                 team = self.teams[team_key]
                 team.score = 0
 
+            self.timer = Timer()
             self.timer.start()
             self.game_on = True
             self.game_paused = False
