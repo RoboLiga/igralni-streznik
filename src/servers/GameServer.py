@@ -63,7 +63,7 @@ class GameServer(Server):
                 # stop the game when no time left
                 if self.game_time_left() <= 0:
                     self.stop_game()
-                    break
+
 
             self.updated.set()
             gevent.sleep(0.01)
