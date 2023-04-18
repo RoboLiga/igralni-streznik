@@ -92,6 +92,14 @@ class Mine(GameServer):
                         self.charging_stations[2] = None
                     self.teams[robot.id].stop_charging()
 
+            # If robot is dead or has no fuel, stop charging and release charging station
+            else:
+                if self.charging_stations[1] == team.robot_id:
+                    self.charging_stations[1] = None
+                elif self.charging_stations[2] == team.robot_id:
+                    self.charging_stations[2] = None
+                self.teams[team.robot_id].stop_charging()
+
     def compute_score(self):
 
         scores = {}
