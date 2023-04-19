@@ -114,19 +114,21 @@ class Mine(GameServer):
             team = self.teams[team_key]
             scores[team.robot_id] = 0
 
-        for good_ore_key in self.state_data.objects['good_ore']:
-            good_ore = self.state_data.objects['good_ore'][good_ore_key]
-            for team_key in self.teams:
-                team = self.teams[team_key]
-                if check_if_object_in_area(good_ore.position, self.state_data.fields[f'{team.color}_basket']):
-                    scores[team.robot_id] += self.config['points']['good']
+        if 'good_ore' in self.state_data.objects:
+            for good_ore_key in self.state_data.objects['good_ore']:
+                good_ore = self.state_data.objects['good_ore'][good_ore_key]
+                for team_key in self.teams:
+                    team = self.teams[team_key]
+                    if check_if_object_in_area(good_ore.position, self.state_data.fields[f'{team.color}_basket']):
+                        scores[team.robot_id] += self.config['points']['good']
 
-        for bad_ore_key in self.state_data.objects['bad_ore']:
-            bad_ore = self.state_data.objects['bad_ore'][bad_ore_key]
-            for team_key in self.teams:
-                team = self.teams[team_key]
-                if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
-                    scores[team.robot_id] += self.config['points']['bad']
+        if 'bad_ore' in self.state_data.objects:
+            for bad_ore_key in self.state_data.objects['bad_ore']:
+                bad_ore = self.state_data.objects['bad_ore'][bad_ore_key]
+                for team_key in self.teams:
+                    team = self.teams[team_key]
+                    if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
+                        scores[team.robot_id] += self.config['points']['bad']
 
         for team_key in self.teams:
             team = self.teams[team_key]
