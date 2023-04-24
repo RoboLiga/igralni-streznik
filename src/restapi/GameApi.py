@@ -125,6 +125,18 @@ def create_api(game_api: GameApi):
             games = [game_id for game_id in game_api.game_servers.keys()]
             return jsonify(games)
 
+        @auth.login_required()
+        @game_ns.response(204, "Success", game_api.GameClass.to_model(api, game_api.game_config))
+        def delete(self):
+            """
+            Delete a game
+            """
+            game_id = auth.username()
+            if game_id in game_api.game_servers:
+                return game_api.game_servers.pop(game_id, None).to_json()
+            else:
+                api.abort(404, f"Game with id {game_id} doesn't exist")
+
     @game_ns.route('/<string:game_id>')
     @game_ns.response(404, 'Game not found')
     @game_ns.param('game_id', 'The game identifier')
