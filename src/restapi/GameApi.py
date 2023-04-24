@@ -253,7 +253,7 @@ def create_api(game_api: GameApi):
 
             teams = [api.payload['team_1'], api.payload['team_2']]
             for team in teams:
-                if team not in game_server.config['robots']:
+                if team not in game_server.game_config['robots']:
                     api.abort(404, f"Team with id {team} doesn't exist")
 
             game_server.set_teams(teams)

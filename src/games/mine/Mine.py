@@ -24,8 +24,8 @@ class Mine(GameServer):
         self.generate_objects_uuids()
 
     def init_team(self, robot_id: int, color: str):
-        if robot_id in self.config['robots']:
-            new_team = MineTeam(robot_id, color, self.config['robots'][robot_id], self.config['robot_time'])
+        if robot_id in self.game_config['robots']:
+            new_team = MineTeam(robot_id, color, self.game_config['robots'][robot_id], self.game_config['robot_time'])
             return new_team
         else:
             logging.error("Team with specified id does not exist in config!")
@@ -54,8 +54,8 @@ class Mine(GameServer):
 
     def generate_objects_uuids(self):
         # Map each object id to a random uuid
-        for ot in self.config['objects']:
-            for o in self.config['objects'][ot]:
+        for ot in self.game_config['objects']:
+            for o in self.game_config['objects'][ot]:
                 self.objects_uuid[str(o)] = str(uuid4())[:8]
 
     def pause_game(self):
@@ -86,11 +86,11 @@ class Mine(GameServer):
                 # Check if robot is charging
                 if check_if_object_in_area(robot.position, self.state_data.fields['charging_station_1']) and \
                         (self.charging_stations[1] is None or self.charging_stations[1] == robot.id):
-                    self.teams[robot.id].charge(self.config['charging_time'])
+                    self.teams[robot.id].charge(self.game_config['charging_time'])
                     self.charging_stations[1] = robot.id
                 elif check_if_object_in_area(robot.position, self.state_data.fields['charging_station_2']) and \
                         (self.charging_stations[2] is None or self.charging_stations[2] == robot.id):
-                    self.teams[robot.id].charge(self.config['charging_time'])
+                    self.teams[robot.id].charge(self.game_config['charging_time'])
                     self.charging_stations[2] = robot.id
                 else:
                     if self.charging_stations[1] == robot.id:
@@ -120,7 +120,7 @@ class Mine(GameServer):
                 for team_key in self.teams:
                     team = self.teams[team_key]
                     if check_if_object_in_area(good_ore.position, self.state_data.fields[f'{team.color}_basket']):
-                        scores[team.robot_id] += self.config['points']['good']
+                        scores[team.robot_id] += self.game_config['points']['good']
 
         if 'bad_ore' in self.state_data.objects:
             for bad_ore_key in self.state_data.objects['bad_ore']:
@@ -128,7 +128,7 @@ class Mine(GameServer):
                 for team_key in self.teams:
                     team = self.teams[team_key]
                     if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
-                        scores[team.robot_id] += self.config['points']['bad']
+                        scores[team.robot_id] += self.game_config['points']['bad']
 
         for team_key in self.teams:
             team = self.teams[team_key]
@@ -144,6 +144,10 @@ class Mine(GameServer):
                 merged_objects[self.objects_uuid[o]] = tmp
 
         result['objects'] = merged_objects
+        result['charging_time'] = self.game_config['charging_time']
+        result['charging_amount'] = self.game_config['charging_amount']
+        result['robot_time'] = self.game_config['robot_time']
+        result['game_time'] = self.game_config['game_time']
         return result
 
     @classmethod
@@ -164,4 +168,8 @@ class Mine(GameServer):
             'Teams',
             {str(t): fields.Nested(MineTeam.to_model(api)) for t in game_config['robots']})
         )
+        result['charging_time'] = game_config['charging_time']
+        result['charging_amount'] = game_config['charging_amount']
+        result['robot_time'] = game_config['robot_time']
+        result['game_time'] = game_config['game_time']
         return result

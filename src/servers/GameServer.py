@@ -34,7 +34,7 @@ class GameServer(Server):
         Server.__init__(self)
 
         self.logger = create_logger('servers.GameServer', game_config['log_level'])
-        self.config = game_config
+        self.game_config = game_config
 
         self.state_server: StateServer = state_server
         self.id: str = str(uuid4())[:4]
@@ -81,8 +81,8 @@ class GameServer(Server):
         self.teams = {team: self.init_team(team, color) for team, color in zip(teams, colors)}
 
     def init_team(self, robot_id: int, color: str):
-        if robot_id in self.config['robots']:
-            return Team(robot_id, color, self.config['robots'][robot_id])
+        if robot_id in self.game_config['robots']:
+            return Team(robot_id, color, self.game_config['robots'][robot_id])
         else:
             logging.error("Team with specified id does not exist in config!")
             raise Exception("Team with specified id does not exist in config!")
