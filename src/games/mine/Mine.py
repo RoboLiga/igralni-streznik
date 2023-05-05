@@ -168,8 +168,8 @@ class Mine(GameServer):
             'Teams',
             {str(t): fields.Nested(MineTeam.to_model(api)) for t in game_config['robots']})
         )
-        result['charging_time'] = game_config['charging_time']
-        result['charging_amount'] = game_config['charging_amount']
-        result['robot_time'] = game_config['robot_time']
-        result['game_time'] = game_config['game_time']
+        result['charging_time'] = fields.Integer()
+        result['charging_amount'] = fields.Integer()
+        result['robot_time'] = fields.Integer()
+        result['game_time'] = fields.Integer()
         return result
