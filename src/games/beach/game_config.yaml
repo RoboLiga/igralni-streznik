@@ -1,0 +1,40 @@
+game_time: 100
+robot_time: 25
+log_level: 'DEBUG'
+
+charging_time: 5
+charging_amount: 25
+
+points:
+  good: 1
+  bad: -2
+
+fields_names:
+  - game_field
+  - team1_bin_plastic # blue
+  - team2_bin_plastic # red
+  - team1_bin_glass # black
+  - team2_bin_glass # green
+  - team1_base
+  - team2_base
+
+objects:
+  plastic:
+    - 36
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 47
+  glass:
+    - 29
+    - 30
+    - 32
+    - 35
+  shells:
+    - 1 # placeholder
+
+robots:
+  0:  Placeholder
+
