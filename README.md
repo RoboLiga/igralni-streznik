@@ -10,6 +10,12 @@ Clone the repository and install dependencies:
 pip install -r requirements.txt
 ```
 
+Also install the required tracker:
+
+```bash
+pip install git+https://github.com/Blarc/sledenje-objektom-2
+```
+
 ## Usage
 
 First, you need to edit the configuration file `game_config.yaml` to your needs. Then, you need to first run:
