@@ -11,12 +11,10 @@ points:
 
 fields_names:
   - game_field
-  - team1_bin_plastic # blue
-  - team2_bin_plastic # red
-  - team1_bin_glass # black
-  - team2_bin_glass # green
-  - team1_base
-  - team2_base
+  - team1_plastic # blue
+  - team1_glass # green
+  - team2_plastic # red
+  - team2_glass # black
 
 objects:
   plastic:

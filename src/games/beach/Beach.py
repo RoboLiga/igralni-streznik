@@ -18,7 +18,9 @@ class Beach(GameServer):
 
         self.charging_stations = {
             1: None,
-            2: None
+            2: None,
+            3: None,
+            4: None
         }
         self.objects_uuid = {}
         self.generate_objects_uuids()
@@ -39,7 +41,9 @@ class Beach(GameServer):
             # Reset charging stations
             self.charging_stations = {
                 1: None,
-                2: None
+                2: None,
+                3: None,
+                4: None
             }
 
             # Start timers
@@ -84,19 +88,31 @@ class Beach(GameServer):
                 robot = self.state_data.robots[team.robot_id]
 
                 # Check if robot is charging
-                if check_if_object_in_area(robot.position, self.state_data.fields['team1_base']) and \
+                if check_if_object_in_area(robot.position, self.state_data.fields['team1_plastic']) and \
                         (self.charging_stations[1] is None or self.charging_stations[1] == robot.id):
                     self.teams[robot.id].charge(self.game_config['charging_time'])
                     self.charging_stations[1] = robot.id
-                elif check_if_object_in_area(robot.position, self.state_data.fields['team2_base']) and \
+                elif check_if_object_in_area(robot.position, self.state_data.fields['team1_glass']) and \
                         (self.charging_stations[2] is None or self.charging_stations[2] == robot.id):
                     self.teams[robot.id].charge(self.game_config['charging_time'])
                     self.charging_stations[2] = robot.id
+                elif check_if_object_in_area(robot.position, self.state_data.fields['team2_plastic']) and \
+                        (self.charging_stations[3] is None or self.charging_stations[3] == robot.id):
+                    self.teams[robot.id].charge(self.game_config['charging_time'])
+                    self.charging_stations[3] = robot.id
+                elif check_if_object_in_area(robot.position, self.state_data.fields['team2_glass']) and \
+                        (self.charging_stations[4] is None or self.charging_stations[4] == robot.id):
+                    self.teams[robot.id].charge(self.game_config['charging_time'])
+                    self.charging_stations[4] = robot.id
                 else:
                     if self.charging_stations[1] == robot.id:
                         self.charging_stations[1] = None
                     elif self.charging_stations[2] == robot.id:
                         self.charging_stations[2] = None
+                    elif self.charging_stations[3] == robot.id:
+                        self.charging_stations[3] = None
+                    elif self.charging_stations[4] == robot.id:
+                        self.charging_stations[4] = None
                     self.teams[robot.id].stop_charging()
 
             # If robot is dead or has no fuel, stop charging and release charging station
@@ -105,6 +121,10 @@ class Beach(GameServer):
                     self.charging_stations[1] = None
                 elif self.charging_stations[2] == team.robot_id:
                     self.charging_stations[2] = None
+                elif self.charging_stations[3] == team.robot_id:
+                    self.charging_stations[3] = None
+                elif self.charging_stations[4] == team.robot_id:
+                    self.charging_stations[4] = None
                 self.teams[team.robot_id].stop_charging()
 
     def compute_score(self):
@@ -114,22 +134,36 @@ class Beach(GameServer):
             team = self.teams[team_key]
             scores[team.robot_id] = 0
 
-        
-        # TODO: Change scoring logic.
-        if 'good_ore' in self.state_data.objects:
-            for good_ore_key in self.state_data.objects['good_ore']:
-                good_ore = self.state_data.objects['good_ore'][good_ore_key]
+        # if 'plastic' is in the plastic container, add points to the team, if 'plastic' is in the glass container, subtract points from the team
+        if 'plastic' in self.state_data.objects:
+            for plastic_key in self.state_data.objects['plastic']:
+                plastic = self.state_data.objects['plastic'][plastic_key]
                 for team_key in self.teams:
                     team = self.teams[team_key]
-                    if check_if_object_in_area(good_ore.position, self.state_data.fields[f'{team.color}_basket']):
+                    if check_if_object_in_area(plastic.position, self.state_data.fields[f'{team.color}_plastic']):
                         scores[team.robot_id] += self.game_config['points']['good']
+                    elif check_if_object_in_area(plastic.position, self.state_data.fields[f'{team.color}_glass']):
+                        scores[team.robot_id] += self.game_config['points']['bad']
 
-        if 'bad_ore' in self.state_data.objects:
-            for bad_ore_key in self.state_data.objects['bad_ore']:
-                bad_ore = self.state_data.objects['bad_ore'][bad_ore_key]
+        # if 'glass' is in the glass container, add points to the team, if 'glass' is in the plastic container, subtract points from the team
+        if 'glass' in self.state_data.objects:
+            for glass_key in self.state_data.objects['glass']:
+                glass = self.state_data.objects['glass'][glass_key]
                 for team_key in self.teams:
                     team = self.teams[team_key]
-                    if check_if_object_in_area(bad_ore.position, self.state_data.fields[f'{team.color}_basket']):
+                    if check_if_object_in_area(glass.position, self.state_data.fields[f'{team.color}_glass']):
+                        scores[team.robot_id] += self.game_config['points']['good']
+                    elif check_if_object_in_area(glass.position, self.state_data.fields[f'{team.color}_plastic']):
+                        scores[team.robot_id] += self.game_config['points']['bad']
+
+        # if 'shells' is in any container, subtract points from the team
+        if 'shells' in self.state_data.objects:
+            for shells_key in self.state_data.objects['shells']:
+                shells = self.state_data.objects['shells'][shells_key]
+                for team_key in self.teams:
+                    team = self.teams[team_key]
+                    if (check_if_object_in_area(shells.position, self.state_data.fields[f'{team.color}_plastic']) or
+                        check_if_object_in_area(shells.position, self.state_data.fields[f'{team.color}_glass'])):
                         scores[team.robot_id] += self.game_config['points']['bad']
 
         for team_key in self.teams:
