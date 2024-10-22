@@ -18,21 +18,18 @@ fields_names:
 
 objects:
   plastic:
-    - 36
-    - 39
-    - 40
-    - 41
-    - 42
-    - 43
-    - 47
+    - 30 #red
   glass:
-    - 29
-    - 30
-    - 32
-    - 35
+    - 29 # green
   shells:
-    - 1 # placeholder
+    - 39 # blue
 
 robots:
-  0:  Placeholder
+  0:  Ocvrte antenice
+  5:  GaSa Dynamics
+  9:  Works on Our Machine 
+  10: Leščurji
+  12: los programadores
+  14: Ibržnik
+  18: Unicode Abuse
 
