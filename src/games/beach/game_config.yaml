@@ -17,12 +17,18 @@ fields_names:
   - red_glass # black
 
 objects:
-  plastic:
-    - 30 #red
-  glass:
-    - 29 # green
-  shells:
-    - 39 # blue
+  plastic: # red
+    - 30
+    - 32
+    - 35
+    - 41
+  glass: # green
+    - 29
+  shells: # blue
+    - 39
+    # DUPLICATE ID- 29
+    - 40
+    - 42
 
 robots:
   0:  Ocvrte antenice
@@ -32,4 +38,5 @@ robots:
   12: los programadores
   14: Ibržnik
   18: Unicode Abuse
+  25: Demo
 
