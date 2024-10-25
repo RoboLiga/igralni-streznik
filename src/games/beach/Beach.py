@@ -145,7 +145,7 @@ class Beach(GameServer):
                     if check_if_object_in_area(plastic.position, self.state_data.fields[f'{team.color}_plastic']):
                         scores[team.robot_id] += self.game_config['points']['good']
                     elif check_if_object_in_area(plastic.position, self.state_data.fields[f'{team.color}_glass']):
-                        scores[team.robot_id] += self.game_config['points']['bad']
+                        scores[team.robot_id] += self.game_config['points']['wrong']
 
         # If 'glass' is in the glass container, add points to the team, if 'glass' is in the plastic container, subtract points from the team
         if 'glass' in self.state_data.objects:
@@ -156,7 +156,7 @@ class Beach(GameServer):
                     if check_if_object_in_area(glass.position, self.state_data.fields[f'{team.color}_glass']):
                         scores[team.robot_id] += self.game_config['points']['good']
                     elif check_if_object_in_area(glass.position, self.state_data.fields[f'{team.color}_plastic']):
-                        scores[team.robot_id] += self.game_config['points']['bad']
+                        scores[team.robot_id] += self.game_config['points']['wrong']
 
         # If 'shells' is in any container, subtract points from the team
         if 'shells' in self.state_data.objects:

@@ -6,8 +6,9 @@ charging_time: 5
 charging_amount: 25
 
 points:
-  good: 1
-  bad: -2
+  good: 2
+  wrong: -1
+  bad: -3
 
 fields_names:
   - game_field
