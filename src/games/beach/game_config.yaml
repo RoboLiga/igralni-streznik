@@ -25,6 +25,8 @@ objects:
     - 41
   glass: # green
     - 29
+    - 36
+    - 47
   shells: # blue
     - 39
     # DUPLICATE ID- 29
