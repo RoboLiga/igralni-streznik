@@ -280,6 +280,22 @@ def create_api(game_api: GameApi):
             else:
                 api.abort(404, f"Game with id {game_id} doesn't exist")
 
+    @game_ns.route('/objects')
+    @game_ns.response(404, 'Game not found')
+    class RandomizedObjectIds(Resource):
+        @game_ns.response(200, "Success", fields.Raw)
+        @auth.login_required()
+        def get(self):
+            """
+            Get randomized object IDs with their types
+            """
+            game_id = auth.username()
+            if game_id in game_api.game_servers:
+                game_server = game_api.game_servers[game_id]
+                return jsonify(game_server.get_objects_with_types())
+            else:
+                api.abort(404, f"Game with id {game_id} doesn't exist")
+
     @team_ns.route('/')
     class Teams(Resource):
         team_model = api.model('TeamIdName', {

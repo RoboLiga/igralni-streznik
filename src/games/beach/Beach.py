@@ -35,9 +35,6 @@ class Beach(GameServer):
 
     def start_game(self):
         if not self.game_on:
-            # Generate new uuids for objects
-            self.generate_objects_uuids()
-
             # Reset charging stations
             self.charging_stations = {
                 1: None,
@@ -61,6 +58,14 @@ class Beach(GameServer):
         for ot in self.game_config['objects']:
             for o in self.game_config['objects'][ot]:
                 self.objects_uuid[str(o)] = str(uuid4())[:8]
+
+    def get_objects_with_types(self):
+        object_ids_with_types = {}
+        for object_type, objects in self.game_config['objects'].items():
+            for object_id in objects:
+                uuid = self.objects_uuid[str(object_id)]
+                object_ids_with_types[uuid] = object_type
+        return object_ids_with_types
 
     def pause_game(self):
         for team_key in self.teams:
