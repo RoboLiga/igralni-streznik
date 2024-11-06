@@ -50,7 +50,7 @@ class GameServer(Server):
         self.set_teams(teams)
 
     def _run(self):
-        self.logger.info("Started a new game server with id: %s" % self.id)
+        self.logger.info("\n\033[92mStarted a new game server with\nID: %s\nPASSWORD: %s\033[0m" % (self.id, self.password))
         while True:
             # Wait for state server to update state
             self.state_server.updated.wait()
