@@ -21,15 +21,15 @@ objects:
   plastic: # red
     - 30
     - 32
-    - 35
+    - 18
     - 41
   glass: # green
-    - 29
+    - 22
     - 36
     - 47
   shells: # blue
     - 39
-    # DUPLICATE ID- 29
+    - 29
     - 40
     - 42
 
