@@ -13,7 +13,7 @@ pip install -r requirements.txt
 Also install the required tracker:
 
 ```bash
-pip install git+https://github.com/Blarc/sledenje-objektom-2
+pip install git+https://github.com/larchman01/sledenje-objektom-2
 ```
 
 ## Usage

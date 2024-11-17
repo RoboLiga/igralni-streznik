@@ -141,7 +141,8 @@ class GameServer(Server):
                     str(o.id): o.to_json() for o in self.state_data.objects[ot].values()
                 } for ot in self.state_data.objects
             },
-            'fields': {f_name: f.to_json() for f_name, f in self.state_data.fields.items()}
+            'fields': {f_name: f.to_json() for f_name, f in self.state_data.fields.items()},
+            'timestamp': self.state_data.timestamp
         }
 
     @classmethod
@@ -176,5 +177,6 @@ class GameServer(Server):
             'fields': fields.Nested(api.model(
                 'Fields',
                 {f: fields.Nested(Field.to_model(api), required=False) for f in game_config['fields_names']})
-            )
+            ),
+            'timestamp': fields.String
         })

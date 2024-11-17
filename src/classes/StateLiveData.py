@@ -13,11 +13,13 @@ class StateLiveData:
         self.fields: Dict[str, Field] = {}
         self.robots: Dict[int, ObjectTracker] = {}
         self.objects: Dict[str, Dict[int, ObjectTracker]] = {}
+        self.timestamp = None
 
     def parse(self, data: TrackerLiveData):
         self.fields = data.fields
         self.robots = {}
         self.objects = {}
+        self.timestamp = data.timestamp
 
         # Loop through all objects
         for key, obj in data.objects.items():
