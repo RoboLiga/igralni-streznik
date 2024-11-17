@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import time
 import logging
 import random
 from typing import Dict, List
@@ -142,7 +143,7 @@ class GameServer(Server):
                 } for ot in self.state_data.objects
             },
             'fields': {f_name: f.to_json() for f_name, f in self.state_data.fields.items()},
-            'timestamp': self.state_data.timestamp
+            'delay': time.time() - self.state_data.timestamp
         }
 
     @classmethod
@@ -178,5 +179,5 @@ class GameServer(Server):
                 'Fields',
                 {f: fields.Nested(Field.to_model(api), required=False) for f in game_config['fields_names']})
             ),
-            'timestamp': fields.String
+            'delay': fields.Float
         })
