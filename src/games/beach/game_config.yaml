@@ -21,17 +21,18 @@ objects:
   plastic: # red
     - 30
     - 32
-    - 18
     - 41
+    - 35
   glass: # green
-    - 22
-    - 36
     - 47
+    - 36
+    - 43
+    - 22
   shells: # blue
-    - 39
     - 29
     - 40
-    - 42
+    - 39
+    - 18
 
 robots:
   0:  Ocvrte antenice
@@ -41,5 +42,7 @@ robots:
   12: los programadores
   14: Unicode Abuse
   19: Ibržnik
+  24: Red
+  27: Blue
   25: Demo
 
