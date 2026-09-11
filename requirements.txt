@@ -1,9 +1,0 @@
-shapely
-gevent
-orjson
-flask
-flask-cors
-flask_restx
-flask_httpauth
-pyyaml
-random_username
