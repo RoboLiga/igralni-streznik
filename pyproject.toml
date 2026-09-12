@@ -4,7 +4,7 @@ name = "roboliga-server"
 version = "1.0.0+2026"
 description = "REST API and camera tracking server for RoboLiga robot competitions"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "flask==3.1.3",
     "gevent==26.8.0",
