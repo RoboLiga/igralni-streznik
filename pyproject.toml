@@ -18,9 +18,5 @@ dependencies = [
     "sledenje-objektom-2 @ git+ssh://git@github.com/RoboLiga/sledenje-objektom-2.git",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
+[tool.uv]
+package = false
