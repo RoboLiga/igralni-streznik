@@ -1,0 +1,40 @@
+game_time: 180
+log_level: 'INFO'
+
+points:
+  steel: 4
+  brick: 2
+  pine: -2
+  cherry: -4
+
+fields_names:
+  - game_field
+  - construction_site
+  - environmentalists
+
+objects:
+  building_material:
+    - 9
+    - 22
+    - 36
+    - 40
+  trees:
+    - 10
+    - 24
+    - 30
+    - 42
+
+robots:
+  0:
+  5:
+  12:
+  14:
+  18:
+  19:
+  25:
+  32:
+  33:
+  35:
+  39:
+  41:
+  44:
