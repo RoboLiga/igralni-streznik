@@ -1,3 +1,5 @@
+import math
+
 import yaml
 import logging
 
@@ -58,3 +60,15 @@ def create_logger(name: str, log_level: str) -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
+
+def distance_squared(p1: Point, p2: Point) -> float:
+    """
+    Returns the squared distance between two points.
+    Args:
+        p1: first point
+        p2: second point
+
+    Returns: distance between p1 and p2
+
+    """
+    return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2

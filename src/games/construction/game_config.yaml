@@ -1,11 +1,14 @@
 game_time: 180
 log_level: 'INFO'
 
+plant_min_distance_moved: 4
+plant_min_time_seconds: 5
+
 points:
   steel: 4
   brick: 2
-  pine: -2
-  cherry: -4
+  pine: 2
+  cherry: 4
 
 fields_names:
   - game_field
