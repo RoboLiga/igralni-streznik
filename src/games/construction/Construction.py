@@ -1,10 +1,12 @@
 import time
 import random
 
-from servers.GameServer import GameServer
-from typing import List
+from sledilnik.classes.Field import Field
 
-from utils import create_logger, distance_squared
+from servers.GameServer import GameServer
+from typing import Dict, List
+
+from utils import create_logger, distance_squared, bilinear_point
 
 
 class Construction(GameServer):
@@ -18,10 +20,33 @@ class Construction(GameServer):
                                    self.state_data.objects['trees'].items()}
         self.planted_trees = set()
         self.ran_over_trees = set()
+        self.tree_fields = None
 
-    def update_game_state(self):
-        self.update_tree_movement()
-        self.update_planted_trees()
+    def generate_tree_fields(self) -> Dict[str, Field]:
+        """
+        Splits game_field into a 5x4 grid of Field cells, using bilinear interpolation of its
+        four corners so the grid stays correct even if the field isn't a perfect rectangle.
+        """
+        game_field = self.state_data.fields['game_field']
+        cols, rows = 5, 4
+
+        tree_fields: Dict[str, Field] = {}
+        for row in range(rows):
+            for col in range(cols):
+                u0, u1 = col / cols, (col + 1) / cols
+                v0, v1 = row / rows, (row + 1) / rows
+                tree_fields[f'game_field_{row}_{col}'] = Field(
+                    top_left=bilinear_point(game_field.top_left, game_field.top_right,
+                                             game_field.bottom_left, game_field.bottom_right, u0, v0),
+                    top_right=bilinear_point(game_field.top_left, game_field.top_right,
+                                              game_field.bottom_left, game_field.bottom_right, u1, v0),
+                    bottom_left=bilinear_point(game_field.top_left, game_field.top_right,
+                                                game_field.bottom_left, game_field.bottom_right, u0, v1),
+                    bottom_right=bilinear_point(game_field.top_left, game_field.top_right,
+                                                 game_field.bottom_left, game_field.bottom_right, u1, v1),
+                )
+
+        return tree_fields
 
     def update_tree_movement(self):
         """
