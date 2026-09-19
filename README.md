@@ -59,13 +59,13 @@ Starts the game server for a given game, or runs interactive tracker setup to ma
 
 **Options**
 
-| Flag | Long form | Argument | Description |
-|------|-----------|----------|--------------|
-| `-h` | `--help` | | Show usage information and exit. |
-| `-n` | `--game` | `GAME` | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games` and `config`, e.g. `beach`, `example`, `mine`, `orchard`. |
-| `-t` | `--tracker-config` | `PATH` | Path to the tracker configuration YAML file. Default: `./config/tracker_config.yaml` (or `$CONFIG_DIR/tracker_config.yaml`). |
-| `-s` | `--setup` | | Run tracker setup instead of starting the server, to mark the game area and fields before the first run of a game. |
-| `-d` | `--test` | | Start a test game (id `test`) with an extended game time. Ignored when run with `--setup`. |
+| Flag | Long form          | Argument | Description                                                                                                                                     |
+|------|--------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-h` | `--help`           |          | Show usage information and exit.                                                                                                                |
+| `-n` | `--game`           | `GAME`   | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games` and `config`, e.g. `beach`, `example`, `mine`, `orchard`. |
+| `-t` | `--tracker-config` | `PATH`   | Path to the tracker configuration YAML file. Default: `./config/tracker_config.yaml` (or `$CONFIG_DIR/tracker_config.yaml`).                                                                  |
+| `-s` | `--setup`          |          | Run tracker setup instead of starting the server, to mark the game area and fields before the first run of a game.                              |
+| `-d` | `--test`           |          | Start a test game (id `test`) with an extended game time. Ignored when run with `--setup`.                                                      |
 
 **Examples**
 
