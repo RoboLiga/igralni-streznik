@@ -5,11 +5,12 @@ from sledilnik.classes.Field import Field
 
 from games.construction.ConstructionTeam import ConstructionTeam
 from servers.GameServer import GameServer
-from typing import Dict, List
+from typing import Dict, List, cast
 
-from utils import create_logger, distance_squared, bilinear_point
+from utils import create_logger, distance_squared, bilinear_point, check_if_object_in_area
 
 BUILDER_COLOR = 'orange'
+
 
 class Construction(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
@@ -20,8 +21,8 @@ class Construction(GameServer):
 
         self.tree_last_movement = {tree_id: (time.time(), tree.position) for tree_id, tree in
                                    self.state_data.objects['trees'].items()}
-        self.planted_trees = set()
-        self.ran_over_trees = set()
+        self.planted_trees: dict[int, Field] = dict()
+        self.ran_over_trees: set[int] = set()
         self.tree_fields = self.generate_tree_fields()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
@@ -41,13 +42,13 @@ class Construction(GameServer):
                 v0, v1 = row / rows, (row + 1) / rows
                 tree_fields[f'game_field_{row}_{col}'] = Field(
                     top_left=bilinear_point(game_field.top_left, game_field.top_right,
-                                             game_field.bottom_left, game_field.bottom_right, u0, v0),
+                                            game_field.bottom_left, game_field.bottom_right, u0, v0),
                     top_right=bilinear_point(game_field.top_left, game_field.top_right,
-                                              game_field.bottom_left, game_field.bottom_right, u1, v0),
+                                             game_field.bottom_left, game_field.bottom_right, u1, v0),
                     bottom_left=bilinear_point(game_field.top_left, game_field.top_right,
-                                                game_field.bottom_left, game_field.bottom_right, u0, v1),
+                                               game_field.bottom_left, game_field.bottom_right, u0, v1),
                     bottom_right=bilinear_point(game_field.top_left, game_field.top_right,
-                                                 game_field.bottom_left, game_field.bottom_right, u1, v1),
+                                                game_field.bottom_left, game_field.bottom_right, u1, v1),
                 )
 
         return tree_fields
@@ -65,6 +66,7 @@ class Construction(GameServer):
 
     def update_game_state(self):
         self.update_trees()
+        self.update_builder()
 
     def update_trees(self):
         """
@@ -78,12 +80,55 @@ class Construction(GameServer):
             if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved']:
                 self.tree_last_movement[tree_id] = (time.time(), tree_position)
                 if tree_id in self.planted_trees:
-                    self.planted_trees.remove(tree_id)
+                    self.planted_trees.pop(tree_id)
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
+                continue
 
-        for tree_id in [k for k, v in self.tree_last_movement.items() if
-                        k not in self.ran_over_trees and time.time() -
-                        self.tree_last_movement[k][0] > self.game_config['plant_min_time_seconds']]:
-            self.planted_trees.add(tree_id)
-            self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
+            if tree_id not in self.ran_over_trees and time.time() - movement_data[0] > self.game_config[
+                'plant_min_time_seconds']:
+                field = next(filter(lambda tree_field: check_if_object_in_area(tree_position, tree_field),
+                                    self.tree_fields.values()), None)
+                if field is None:
+                    continue
+                self.planted_trees[tree_id] = field
+                team = next(filter(lambda i_team: not cast(ConstructionTeam, i_team).is_builder(), self.teams.values()),
+                            None)
+                if team is not None:
+                    team = cast(ConstructionTeam, team)
+                    # TODO Should teams be able to replant trees to gain more points?
+                    team.score += self.game_config['points']['cherry'] if tree_id == self.cherry else \
+                        self.game_config['points']['pine']
+                else:
+                    self.logger.error("Could not find green team and could not assign points to it!")
+                self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
 
+    def update_builder(self) -> None:
+        team = next(filter(lambda i_team: cast(ConstructionTeam, i_team).is_builder(), self.teams.values()), None)
+        if team is None:
+            return
+        team = cast(ConstructionTeam, team)
+        robot = self.state_data.robots[team.robot_id]
+
+        # Check if any trees were ran over
+        for tree_id, field in self.planted_trees.items():
+            if not check_if_object_in_area(robot.position, field):
+                continue
+            self.ran_over_trees.add(tree_id)
+            self.planted_trees.pop(tree_id)
+            team.score -= self.game_config['points']['cherry'] if tree_id == self.cherry else \
+                self.game_config['points']['pine']
+
+        # Now calculate the current score
+        team.score = 0
+        # Check if materials delivered
+        construction_site_field = self.state_data.fields['construction_site']
+        for material_id, material in self.state_data.objects['building_material'].items():
+            if not check_if_object_in_area(material.position, construction_site_field):
+                continue
+            team.score += self.game_config['points']['steel'] if material_id == self.steel else \
+                self.game_config['points']['brick']
+
+        # Calculate ran over trees
+        for tree_id in self.ran_over_trees:
+            team.score -= self.game_config['points']['cherry'] if tree_id == self.cherry else \
+                self.game_config['points']['pine']
