@@ -50,20 +50,24 @@ class Construction(GameServer):
 
         return tree_fields
 
-    def update_tree_movement(self):
+    def update_game_state(self):
+        self.update_trees()
+
+    def update_trees(self):
         """
-        Updates tree movement data if a tree has moved more than the distance set in game config
+        Adds planted trees if a tree hasn't moved for more the time set in game config and hasn't been run over yet
         """
         for tree_id, movement_data in self.tree_last_movement.items():
+            if tree_id not in self.state_data.objects['trees']:
+                self.logger.warning(f"Tracked tree (ID: {tree_id}) is not in the state data!")
+                continue
             tree_position = self.state_data.objects['trees'][tree_id].position
             if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved']:
                 self.tree_last_movement[tree_id] = (time.time(), tree_position)
 
-    def update_planted_trees(self):
-        """
-        Adds planted trees if a tree hasn't moved for more the time set in game config and hasn't been run over yet
-        """
         for tree_id in [k for k, v in self.tree_last_movement.items() if
                         k not in self.ran_over_trees and time.time() -
                         self.tree_last_movement[k][0] > self.game_config['plant_min_time_seconds']]:
             self.planted_trees.add(tree_id)
+            self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
+
