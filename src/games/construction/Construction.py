@@ -20,15 +20,17 @@ class Construction(GameServer):
                                    self.state_data.objects['trees'].items()}
         self.planted_trees = set()
         self.ran_over_trees = set()
-        self.tree_fields = None
+        self.tree_fields = self.generate_tree_fields()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
         """
-        Splits game_field into a 5x4 grid of Field cells, using bilinear interpolation of its
+        Splits game_field into a grid of Field cells, using bilinear interpolation of its
         four corners so the grid stays correct even if the field isn't a perfect rectangle.
         """
         game_field = self.state_data.fields['game_field']
-        cols, rows = 5, 4
+        tree_field_config = self.game_config['tree_fields']
+        cols = tree_field_config['columns']
+        rows = tree_field_config['rows']
 
         tree_fields: Dict[str, Field] = {}
         for row in range(rows):
