@@ -3,11 +3,13 @@ import random
 
 from sledilnik.classes.Field import Field
 
+from games.construction.ConstructionTeam import ConstructionTeam
 from servers.GameServer import GameServer
 from typing import Dict, List
 
 from utils import create_logger, distance_squared, bilinear_point
 
+BUILDER_COLOR = 'orange'
 
 class Construction(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
@@ -49,6 +51,17 @@ class Construction(GameServer):
                 )
 
         return tree_fields
+
+    def set_teams(self, teams: List[int]):
+        colors = [BUILDER_COLOR, 'green']
+        self.teams = {team: self.init_team(team, color) for team, color in zip(teams, colors)}
+
+    def init_team(self, robot_id: int, color: str):
+        if robot_id in self.game_config['robots']:
+            return ConstructionTeam(robot_id, color, self.game_config['robots'][robot_id])
+        else:
+            self.logger.error("Team with specified id does not exist in config!")
+            raise Exception("Team with specified id does not exist in config!")
 
     def update_game_state(self):
         self.update_trees()
