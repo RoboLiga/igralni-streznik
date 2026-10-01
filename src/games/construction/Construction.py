@@ -22,7 +22,7 @@ class Construction(GameServer):
         self.tree_last_movement = {tree_id: (time.time(), tree.position) for tree_id, tree in
                                    self.state_data.objects['trees'].items()}
         self.planted_trees: dict[int, Field] = dict()
-        self.ran_over_trees: set[int] = set()
+        self.ran_over_trees: int = 0
         self.used_planted_trees: set[int] = set()
         self.tree_fields = self.generate_tree_fields()
 
@@ -85,8 +85,7 @@ class Construction(GameServer):
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
                 continue
 
-            if tree_id not in self.ran_over_trees and time.time() - movement_data[0] > self.game_config[
-                'plant_min_time_seconds']:
+            if time.time() - movement_data[0] > self.game_config['plant_min_time_seconds']:
                 field = next(filter(lambda tree_field: check_if_object_in_area(tree_position, tree_field),
                                     self.tree_fields.values()), None)
                 if field is None:
@@ -114,9 +113,9 @@ class Construction(GameServer):
         for tree_id, field in self.planted_trees.items():
             if not check_if_object_in_area(robot.position, field):
                 continue
-            self.ran_over_trees.add(tree_id)
             self.planted_trees.pop(tree_id)
-            team.score -= self.game_config['points']['cherry'] if tree_id == self.cherry else \
+            self.tree_last_movement[tree_id] = (time.time(), self.state_data.objects['trees'][tree_id].position)
+            self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
                 self.game_config['points']['pine']
 
         # Now calculate the current score
@@ -130,6 +129,4 @@ class Construction(GameServer):
                 self.game_config['points']['brick']
 
         # Calculate ran over trees
-        for tree_id in self.ran_over_trees:
-            team.score -= self.game_config['points']['cherry'] if tree_id == self.cherry else \
-                self.game_config['points']['pine']
+        team.score -= self.ran_over_trees
