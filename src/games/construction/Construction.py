@@ -23,6 +23,7 @@ class Construction(GameServer):
                                    self.state_data.objects['trees'].items()}
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: set[int] = set()
+        self.used_planted_trees: set[int] = set()
         self.tree_fields = self.generate_tree_fields()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
@@ -93,13 +94,13 @@ class Construction(GameServer):
                 self.planted_trees[tree_id] = field
                 team = next(filter(lambda i_team: not cast(ConstructionTeam, i_team).is_builder(), self.teams.values()),
                             None)
-                if team is not None:
+                if team is not None and tree_id not in self.used_planted_trees:
                     team = cast(ConstructionTeam, team)
-                    # TODO Should teams be able to replant trees to gain more points?
                     team.score += self.game_config['points']['cherry'] if tree_id == self.cherry else \
                         self.game_config['points']['pine']
                 else:
                     self.logger.error("Could not find green team and could not assign points to it!")
+                self.used_planted_trees.add(tree_id)
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
 
     def update_builder(self) -> None:
