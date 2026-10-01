@@ -78,6 +78,7 @@ class Construction(GameServer):
                 self.logger.warning(f"Tracked tree (ID: {tree_id}) is not in the state data!")
                 continue
             tree_position = self.state_data.objects['trees'][tree_id].position
+            # Update tree movement data if changed
             if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved']:
                 self.tree_last_movement[tree_id] = (time.time(), tree_position)
                 if tree_id in self.planted_trees:
@@ -85,6 +86,7 @@ class Construction(GameServer):
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
                 continue
 
+            # Plant eligible trees
             if time.time() - movement_data[0] > self.game_config['plant_min_time_seconds']:
                 field = next(filter(lambda tree_field: check_if_object_in_area(tree_position, tree_field),
                                     self.tree_fields.values()), None)
