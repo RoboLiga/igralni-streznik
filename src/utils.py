@@ -1,3 +1,5 @@
+import math
+
 import yaml
 import logging
 
@@ -58,3 +60,36 @@ def create_logger(name: str, log_level: str) -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
+
+def distance_squared(p1: Point, p2: Point) -> float:
+    """
+    Returns the squared distance between two points.
+    Args:
+        p1: first point
+        p2: second point
+
+    Returns: distance between p1 and p2
+
+    """
+    return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
+
+def bilinear_point(top_left: Point, top_right: Point, bottom_left: Point, bottom_right: Point,
+                    u: float, v: float) -> Point:
+    """
+    Interpolates a point inside the quadrilateral defined by four corners.
+    Args:
+        top_left: top left corner of the quadrilateral
+        top_right: top right corner of the quadrilateral
+        bottom_left: bottom left corner of the quadrilateral
+        bottom_right: bottom right corner of the quadrilateral
+        u: fraction across the top/bottom edge, 0 (left) to 1 (right)
+        v: fraction down the left/right edge, 0 (top) to 1 (bottom)
+
+    Returns: interpolated point
+
+    """
+    x = ((1 - u) * (1 - v) * top_left.x + u * (1 - v) * top_right.x +
+         (1 - u) * v * bottom_left.x + u * v * bottom_right.x)
+    y = ((1 - u) * (1 - v) * top_left.y + u * (1 - v) * top_right.y +
+         (1 - u) * v * bottom_left.y + u * v * bottom_right.y)
+    return Point(x, y)
