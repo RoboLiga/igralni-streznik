@@ -3,13 +3,11 @@ import random
 
 from sledilnik.classes.Field import Field
 
-from games.construction.ConstructionTeam import ConstructionTeam
-from servers.GameServer import GameServer
-from typing import Dict, List, cast
+from src.games.construction.ConstructionTeam import ConstructionTeam, BUILDER_COLOR
+from src.servers.GameServer import GameServer
+from typing import Dict, List, Optional, cast
 
-from utils import create_logger, distance_squared, bilinear_point, check_if_object_in_area
-
-BUILDER_COLOR = 'orange'
+from src.utils import create_logger, distance_squared, bilinear_point, check_if_object_in_area
 
 
 class Construction(GameServer):
@@ -19,12 +17,12 @@ class Construction(GameServer):
         self.cherry = random.choice(self.game_config['objects']['trees'])
         self.steel = random.choice(self.game_config['objects']['construction_material'])
 
-        self.tree_last_movement = {tree_id: (time.time(), tree.position) for tree_id, tree in
-                                   self.state_data.objects['trees'].items()}
+        # State data is only available once the game loop runs, so these are filled in on the first update
+        self.tree_last_movement: dict[int, tuple] = dict()
+        self.tree_fields: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
         self.used_planted_trees: set[int] = set()
-        self.tree_fields = self.generate_tree_fields()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
         """
@@ -66,6 +64,8 @@ class Construction(GameServer):
             raise Exception("Team with specified id does not exist in config!")
 
     def update_game_state(self):
+        if self.tree_fields is None:
+            self.tree_fields = self.generate_tree_fields()
         self.update_trees()
         self.update_builder()
 
@@ -73,17 +73,25 @@ class Construction(GameServer):
         """
         Adds planted trees if a tree hasn't moved for more the time set in game config and hasn't been run over yet
         """
+        # Start tracking trees the first time they are seen
+        for tree_id, tree in self.state_data.objects['trees'].items():
+            if tree_id not in self.tree_last_movement:
+                self.tree_last_movement[tree_id] = (time.time(), tree.position)
+
         for tree_id, movement_data in self.tree_last_movement.items():
             if tree_id not in self.state_data.objects['trees']:
                 self.logger.warning(f"Tracked tree (ID: {tree_id}) is not in the state data!")
                 continue
             tree_position = self.state_data.objects['trees'][tree_id].position
             # Update tree movement data if changed
-            if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved']:
+            if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved'] ** 2:
                 self.tree_last_movement[tree_id] = (time.time(), tree_position)
                 if tree_id in self.planted_trees:
                     self.planted_trees.pop(tree_id)
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
+                continue
+
+            if tree_id in self.planted_trees:
                 continue
 
             # Plant eligible trees
@@ -93,32 +101,40 @@ class Construction(GameServer):
                 if field is None:
                     continue
                 self.planted_trees[tree_id] = field
+                self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
+
+                # Each tree only scores the first time it is planted
+                if tree_id in self.used_planted_trees:
+                    continue
+                self.used_planted_trees.add(tree_id)
                 team = next(filter(lambda i_team: not cast(ConstructionTeam, i_team).is_builder(), self.teams.values()),
                             None)
-                if team is not None and tree_id not in self.used_planted_trees:
-                    team = cast(ConstructionTeam, team)
-                    team.score += self.game_config['points']['cherry'] if tree_id == self.cherry else \
-                        self.game_config['points']['pine']
-                else:
+                if team is None:
                     self.logger.error("Could not find green team and could not assign points to it!")
-                self.used_planted_trees.add(tree_id)
-                self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
+                    continue
+                team = cast(ConstructionTeam, team)
+                team.score += self.game_config['points']['cherry'] if tree_id == self.cherry else \
+                    self.game_config['points']['pine']
 
     def update_builder(self) -> None:
         team = next(filter(lambda i_team: cast(ConstructionTeam, i_team).is_builder(), self.teams.values()), None)
         if team is None:
             return
         team = cast(ConstructionTeam, team)
-        robot = self.state_data.robots[team.robot_id]
+        robot = self.state_data.robots.get(team.robot_id)
 
-        # Check if any trees were ran over
-        for tree_id, field in self.planted_trees.items():
-            if not check_if_object_in_area(robot.position, field):
-                continue
-            self.planted_trees.pop(tree_id)
-            self.tree_last_movement[tree_id] = (time.time(), self.state_data.objects['trees'][tree_id].position)
-            self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
-                self.game_config['points']['pine']
+        # Check if any trees were ran over (skipped while the builder isn't detected)
+        if robot is not None:
+            for tree_id, field in list(self.planted_trees.items()):
+                if not check_if_object_in_area(robot.position, field):
+                    continue
+                self.planted_trees.pop(tree_id)
+                tree = self.state_data.objects['trees'].get(tree_id)
+                tree_position = tree.position if tree is not None else self.tree_last_movement[tree_id][1]
+                self.tree_last_movement[tree_id] = (time.time(), tree_position)
+                self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
+                    self.game_config['points']['pine']
+                self.logger.info(f"Tracked tree (ID: {tree_id}) has been ran over.")
 
         # Now calculate the current score
         team.score = 0
