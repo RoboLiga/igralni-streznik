@@ -20,7 +20,7 @@ fields_names:
   - environmentalists
 
 objects:
-  building_material:
+  construction_material:
     - 9
     - 22
     - 36

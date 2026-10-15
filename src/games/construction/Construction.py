@@ -124,7 +124,7 @@ class Construction(GameServer):
         team.score = 0
         # Check if materials delivered
         construction_site_field = self.state_data.fields['construction_site']
-        for material_id, material in self.state_data.objects['building_material'].items():
+        for material_id, material in self.state_data.objects['construction_material'].items():
             if not check_if_object_in_area(material.position, construction_site_field):
                 continue
             team.score += self.game_config['points']['steel'] if material_id == self.steel else \
