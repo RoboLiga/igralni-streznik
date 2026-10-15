@@ -1,5 +1,6 @@
-from classes.Team import Team
-from games.construction.Construction import BUILDER_COLOR
+from src.classes.Team import Team
+
+BUILDER_COLOR = 'orange'
 
 
 class ConstructionTeam(Team):
