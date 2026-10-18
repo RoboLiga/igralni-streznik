@@ -1,0 +1,13 @@
+.git
+.idea
+.venv
+.pytest_cache
+__pycache__/
+*.py[cod]
+dist
+tests
+*.mp4
+saved_fields
+saved_fields.pickle
+Dockerfile
+.dockerignore

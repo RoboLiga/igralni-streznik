@@ -39,8 +39,8 @@ to communicate with.
 **Synopsis**
 
 ```shell
-python main.py -n GAME [-t PATH] [-s] [-d]
-python main.py -h
+uv run main.py -n GAME [-t PATH] [-s] [-d]
+uv run main.py -h
 ```
 
 Starts the game server for a given game, or runs interactive tracker setup to mark the game area and fields.
@@ -60,17 +60,20 @@ Starts the game server for a given game, or runs interactive tracker setup to ma
 
 Mark the game area and fields for `orchard` before first use:
 ```shell
-python main.py --game orchard --setup
+uv run main.py --game orchard --setup
 ```
 
 Run the game server for `orchard`:
 ```shell
-python main.py --game orchard
+uv run main.py --game orchard
 ```
 
 Run a longer test game for `beach` using a custom tracker config:
 ```shell
-python main.py --game beach --tracker-config ./custom_tracker.yaml --test
+uv run main.py --game beach --tracker-config ./custom_tracker.yaml --test
 ```
 
 **Exit status:** `0` on success or `--help`, `1` on an invalid option, and an unhandled exception (e.g. missing `--game`) otherwise.
+
+## Docker
+To run the image with Docker make sure to set the GAME_NAME variable.

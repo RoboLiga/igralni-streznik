@@ -702,8 +702,8 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-gui = [{ name = "sledenje-objektom-2", extras = ["gui"], directory = "../sledenje-objektom-2" }]
-headless = [{ name = "sledenje-objektom-2", extras = ["headless"], directory = "../sledenje-objektom-2" }]
+gui = [{ name = "sledenje-objektom-2", extras = ["gui"], git = "https://github.com/RoboLiga/sledenje-objektom.git" }]
+headless = [{ name = "sledenje-objektom-2", extras = ["headless"], git = "https://github.com/RoboLiga/sledenje-objektom.git" }]
 
 [[package]]
 name = "rpds-py"
@@ -855,7 +855,7 @@ wheels = [
 [[package]]
 name = "sledenje-objektom-2"
 version = "1.0.0"
-source = { directory = "../sledenje-objektom-2" }
+source = { git = "https://github.com/RoboLiga/sledenje-objektom.git#7e4244d86fecdf8d64164319a8e965bd25d9bc61" }
 dependencies = [
     { name = "numpy" },
     { name = "pyyaml" },
@@ -869,20 +869,6 @@ gui = [
 headless = [
     { name = "opencv-contrib-python-headless" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = "==2.5.3" },
-    { name = "opencv-contrib-python", marker = "extra == 'gui'", specifier = "==4.14.0.94" },
-    { name = "opencv-contrib-python-headless", marker = "extra == 'headless'", specifier = "==4.14.0.94" },
-    { name = "pyyaml", specifier = "==6.0.3" },
-    { name = "shapely", specifier = "==2.1.2" },
-]
-provides-extras = ["gui", "headless"]
-
-[package.metadata.requires-dev]
-gui = [{ name = "sledenje-objektom-2", extras = ["gui"] }]
-headless = [{ name = "sledenje-objektom-2", extras = ["headless"] }]
 
 [[package]]
 name = "typing-extensions"

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import getopt
+import os
 import sys
 
 from sledilnik.TrackerSetup import TrackerSetup
@@ -8,7 +9,7 @@ from src.restapi.GameApi import GameApi
 
 def main(argv):
     tracker_config_path = './tracker_config.yaml'
-    game_name = None
+    game_name = os.environ.get('GAME_NAME') or None
     setup = False
     create_test_game = False
 
@@ -61,7 +62,7 @@ def help_text():
     print("\t--help (-h)                                     shows this help")
     print("\t--tracker-config (-t) <path to tracker config>  sets path to tracker config")
     print("\t--setup (-s)                                    runs tracker setup")
-    print("\t--game (-n) <game name>                         runs game server for given game")
+    print("\t--game (-n) <game name>                         runs game server for given game (or set GAME_NAME)")
     print("\t--test (-d)                                     creates a test game with longer game time")
 
 
