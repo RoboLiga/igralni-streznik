@@ -10,6 +10,13 @@ Clone the repository and install dependencies:
 uv sync
 ```
 
+This installs OpenCV with GUI support (the default `gui` dependency group), which `--setup` needs.
+On a headless machine, install the OpenCV build without GUI support instead:
+
+```bash
+uv sync --no-default-groups --group headless
+```
+
 ## Usage
 
 First, you need to edit the configuration file `game_config.yaml` to your needs. Then, you need to first run:
