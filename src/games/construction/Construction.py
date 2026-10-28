@@ -63,6 +63,16 @@ class Construction(GameServer):
             self.logger.error("Team with specified id does not exist in config!")
             raise Exception("Team with specified id does not exist in config!")
 
+    def get_objects_with_types(self) -> Dict[str, str]:
+        # Object ids aren't randomized in this game, so they are returned as-is (as strings, matching to_json keys).
+        # Types reveal which tree is the cherry and which material is the steel.
+        object_ids_with_types = {}
+        for tree_id in self.game_config['objects']['trees']:
+            object_ids_with_types[str(tree_id)] = 'cherry' if tree_id == self.cherry else 'pine'
+        for material_id in self.game_config['objects']['construction_material']:
+            object_ids_with_types[str(material_id)] = 'steel' if material_id == self.steel else 'brick'
+        return object_ids_with_types
+
     def update_game_state(self):
         if self.tree_fields is None:
             self.tree_fields = self.generate_tree_fields()
