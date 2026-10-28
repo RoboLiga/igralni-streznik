@@ -94,6 +94,15 @@ def test_first_team_is_builder(game):
     assert not green(game).is_builder()
 
 
+def test_objects_with_types_reveal_cherry_and_steel(game, config):
+    objects_with_types = game.get_objects_with_types()
+    for tree_id in config['objects']['trees']:
+        assert objects_with_types[str(tree_id)] == ('cherry' if tree_id == CHERRY_ID else 'pine')
+    for material_id in config['objects']['construction_material']:
+        assert objects_with_types[str(material_id)] == ('steel' if material_id == STEEL_ID else 'brick')
+    assert len(objects_with_types) == sum(len(ids) for ids in config['objects'].values())
+
+
 def test_tree_fields_cover_game_field(game, config):
     game.update_game_state()
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
