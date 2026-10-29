@@ -1,0 +1,55 @@
+game_time: 180
+log_level: 'INFO'
+
+plant_min_distance_moved: 4
+plant_min_time_seconds: 5
+
+tree_fields:
+  columns: 5
+  rows: 4
+
+points:
+  steel: 4
+  brick: 2
+  pine: 2
+  cherry: 4
+
+fields_names:
+  - game_field
+  - construction_site
+  - environmentalists
+
+objects:
+  construction_material:
+    - 47
+    - 0
+    - 29
+    - 10
+    - 43
+    - 22
+  trees:
+    - 24
+    - 40
+    - 36
+    - 30
+    - 42
+    - 29
+
+robots:
+  5: To ne pije vode
+  12: Gruda
+  14: le🇬​​🇴​kocke
+  18: Ibržnik
+  19: Roboštela
+  25: Bajtmani
+  32: The Cutie Mark Crusaders
+  33: Išaki
+  34: Lolek & Bolek
+  35: Toeto
+  37: Miha++
+  39: Loose screws
+  41: Radioaktivna Cvetača
+  44: Liba Laca Lak
+  45: Albañiles
+  46: Jogurtni Kekci
+  48: SSO

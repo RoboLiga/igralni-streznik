@@ -32,8 +32,8 @@ to communicate with.
 **Synopsis**
 
 ```shell
-python main.py -n GAME [-t PATH] [-s] [-d]
-python main.py -h
+uv run main.py -n GAME [-t PATH] [-s] [-d]
+uv run main.py -h
 ```
 
 Starts the game server for a given game, or runs interactive tracker setup to mark the game area and fields.
@@ -41,29 +41,29 @@ Starts the game server for a given game, or runs interactive tracker setup to ma
 
 **Options**
 
-| Flag | Long form | Argument | Description |
-|------|-----------|----------|--------------|
-| `-h` | `--help` | | Show usage information and exit. |
-| `-n` | `--game` | `GAME` | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games`, e.g. `beach`, `example`, `mine`, `orchard`. |
-| `-t` | `--tracker-config` | `PATH` | Path to the tracker configuration YAML file. Default: `./tracker_config.yaml`. |
-| `-s` | `--setup` | | Run tracker setup instead of starting the server, to mark the game area and fields before the first run of a game. |
-| `-d` | `--test` | | Start a test game (id `test`) with an extended game time. Ignored when run with `--setup`. |
+| Flag | Long form          | Argument | Description                                                                                                                                     |
+|------|--------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-h` | `--help`           |          | Show usage information and exit.                                                                                                                |
+| `-n` | `--game`           | `GAME`   | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games`, e.g. `beach`, `example`, `mine`, `orchard`. |
+| `-t` | `--tracker-config` | `PATH`   | Path to the tracker configuration YAML file. Default: `./tracker_config.yaml`.                                                                  |
+| `-s` | `--setup`          |          | Run tracker setup instead of starting the server, to mark the game area and fields before the first run of a game.                              |
+| `-d` | `--test`           |          | Start a test game (id `test`) with an extended game time. Ignored when run with `--setup`.                                                      |
 
 **Examples**
 
 Mark the game area and fields for `orchard` before first use:
 ```shell
-python main.py --game orchard --setup
+uv run main.py --game orchard --setup
 ```
 
 Run the game server for `orchard`:
 ```shell
-python main.py --game orchard
+uv run main.py --game orchard
 ```
 
 Run a longer test game for `beach` using a custom tracker config:
 ```shell
-python main.py --game beach --tracker-config ./custom_tracker.yaml --test
+uv run main.py --game beach --tracker-config ./custom_tracker.yaml --test
 ```
 
 **Exit status:** `0` on success or `--help`, `1` on an invalid option, and an unhandled exception (e.g. missing `--game`) otherwise.
