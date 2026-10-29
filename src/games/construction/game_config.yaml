@@ -21,27 +21,35 @@ fields_names:
 
 objects:
   construction_material:
-    - 9
-    - 22
-    - 36
-    - 40
-  trees:
+    - 47
+    - 0
+    - 29
     - 10
+    - 43
+    - 22
+  trees:
     - 24
+    - 40
+    - 36
     - 30
     - 42
+    - 29
 
 robots:
-  0:
-  5:
-  12:
-  14:
-  18:
-  19:
-  25:
-  32:
-  33:
-  35:
-  39:
-  41:
-  44:
+  5: To ne pije vode
+  12: Gruda
+  14: le🇬​​🇴​kocke
+  18: Ibržnik
+  19: Roboštela
+  25: Bajtmani
+  32: The Cutie Mark Crusaders
+  33: Išaki
+  34: Lolek & Bolek
+  35: Toeto
+  37: Miha++
+  39: Loose screws
+  41: Radioaktivna Cvetača
+  44: Liba Laca Lak
+  45: Albañiles
+  46: Jogurtni Kekci
+  48: SSO
