@@ -1,6 +1,7 @@
 import time
 import random
 
+from flask_restx import Api, fields
 from sledilnik.classes.Field import Field
 
 from src.games.construction.ConstructionTeam import ConstructionTeam, BUILDER_COLOR
@@ -8,6 +9,10 @@ from src.servers.GameServer import GameServer
 from typing import Dict, List, Optional, cast
 
 from src.utils import create_logger, distance_squared, bilinear_point, check_if_object_in_area
+
+
+def tree_field_name(row: int, col: int) -> str:
+    return f'game_field_{row}_{col}'
 
 
 class Construction(GameServer):
@@ -39,7 +44,7 @@ class Construction(GameServer):
             for col in range(cols):
                 u0, u1 = col / cols, (col + 1) / cols
                 v0, v1 = row / rows, (row + 1) / rows
-                tree_fields[f'game_field_{row}_{col}'] = Field(
+                tree_fields[tree_field_name(row, col)] = Field(
                     top_left=bilinear_point(game_field.top_left, game_field.top_right,
                                             game_field.bottom_left, game_field.bottom_right, u0, v0),
                     top_right=bilinear_point(game_field.top_left, game_field.top_right,
@@ -158,3 +163,25 @@ class Construction(GameServer):
 
         # Calculate ran over trees
         team.score -= self.ran_over_trees
+
+    def to_json(self):
+        result = super().to_json()
+        # Tree fields are generated from game_field, so they are merged here instead of into the tracker's fields
+        if self.tree_fields:
+            result['fields'].update({name: field.to_json() for name, field in self.tree_fields.items()})
+        return result
+
+    @classmethod
+    def to_model(cls, api: Api, game_config: Dict):
+        result = super().to_model(api, game_config)
+        tree_field_config = game_config['tree_fields']
+        field_names = game_config['fields_names'] + [
+            tree_field_name(row, col)
+            for row in range(tree_field_config['rows'])
+            for col in range(tree_field_config['columns'])
+        ]
+        result['fields'] = fields.Nested(api.model(
+            'Fields',
+            {f: fields.Nested(Field.to_model(api), required=False) for f in field_names})
+        )
+        return result
