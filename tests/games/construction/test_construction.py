@@ -41,7 +41,10 @@ class FakeClock:
 
 @pytest.fixture
 def config():
-    return read_config(CONFIG_PATH)
+    game_config = read_config(CONFIG_PATH)
+    # Robot ids change with every competition's team list, so tests use their own
+    game_config['robots'] = {BUILDER_ID: 'Builder', GREEN_ID: 'Green'}
+    return game_config
 
 
 @pytest.fixture
@@ -110,6 +113,25 @@ def test_tree_fields_cover_game_field(game, config):
     cell = game.tree_fields['game_field_1_2']
     assert check_if_object_in_area(Point(250, 150), cell)
     assert not check_if_object_in_area(Point(150, 150), cell)
+
+
+def test_tree_fields_in_json(game, config):
+    game.update_game_state()
+    # Tracked stand-ins can't be serialized, only fields are checked here
+    game.state_data.robots, game.state_data.objects, game.state_data.timestamp = {}, {}, 0
+    json_fields = game.to_json()['fields']
+    rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
+    assert set(json_fields) == {'game_field', 'construction_site'} | {
+        f'game_field_{row}_{col}' for row in range(rows) for col in range(cols)}
+    assert json_fields['game_field_1_2'] == game.tree_fields['game_field_1_2'].to_json()
+
+
+def test_tree_fields_in_model(config):
+    from flask_restx import Api
+    model_fields = Construction.to_model(Api(), config)['fields'].nested
+    assert 'game_field_0_0' in model_fields
+    assert f"game_field_{config['tree_fields']['rows'] - 1}_{config['tree_fields']['columns'] - 1}" in model_fields
+    assert set(config['fields_names']) <= set(model_fields)
 
 
 def test_tree_not_planted_before_min_time(game, clock, config):
