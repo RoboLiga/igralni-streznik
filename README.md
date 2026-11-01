@@ -19,7 +19,18 @@ uv sync --no-default-groups --group headless
 
 ## Usage
 
-First, you need to edit the configuration file `game_config.yaml` to your needs. Then, you need to first run:
+All configuration lives in the `config/` directory:
+
+```
+config/
+  tracker_config.yaml       # tracker / camera settings, shared by all games
+  saved_fields.pickle       # fields marked with --setup (not committed)
+  <game>/game_config.yaml   # per-game settings, e.g. config/mine/game_config.yaml
+```
+
+Set the `CONFIG_DIR` environment variable to read config from a different directory with the same layout.
+
+First, you need to edit `config/<game_name>/game_config.yaml` to your needs. Then, you need to first run:
 ```shell
 uv run main.py --game <game_name> --setup
 ```
@@ -51,8 +62,8 @@ Starts the game server for a given game, or runs interactive tracker setup to ma
 | Flag | Long form | Argument | Description |
 |------|-----------|----------|--------------|
 | `-h` | `--help` | | Show usage information and exit. |
-| `-n` | `--game` | `GAME` | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games`, e.g. `beach`, `example`, `mine`, `orchard`. |
-| `-t` | `--tracker-config` | `PATH` | Path to the tracker configuration YAML file. Default: `./tracker_config.yaml`. |
+| `-n` | `--game` | `GAME` | Name of the game to run (case-insensitive). **Required.** Must match a directory under `src/games` and `config`, e.g. `beach`, `example`, `mine`, `orchard`. |
+| `-t` | `--tracker-config` | `PATH` | Path to the tracker configuration YAML file. Default: `./config/tracker_config.yaml` (or `$CONFIG_DIR/tracker_config.yaml`). |
 | `-s` | `--setup` | | Run tracker setup instead of starting the server, to mark the game area and fields before the first run of a game. |
 | `-d` | `--test` | | Start a test game (id `test`) with an extended game time. Ignored when run with `--setup`. |
 
@@ -77,3 +88,17 @@ uv run main.py --game beach --tracker-config ./custom_tracker.yaml --test
 
 ## Docker
 To run the image with Docker make sure to set the GAME_NAME variable.
+
+### Configuration
+
+`docker-compose.yml` mounts the repository's `config/` directory over `/app/config`, so edits on the host
+are used by the container without rebuilding the image. Put `saved_fields.pickle` in `config/` before starting:
+
+```shell
+GAME_NAME=mine docker compose up -d --build
+```
+
+Config is read at startup, so run `docker compose restart` after editing.
+
+The image only has headless OpenCV, so `--setup` cannot run in the container. Run setup on a machine with
+a display (see [Usage](#usage)) and copy the resulting `saved_fields.pickle` into `config/`.

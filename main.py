@@ -5,10 +5,11 @@ import sys
 
 from sledilnik.TrackerSetup import TrackerSetup
 from src.restapi.GameApi import GameApi
+from src.utils import game_config_path, tracker_config_path
 
 
 def main(argv):
-    tracker_config_path = './tracker_config.yaml'
+    tracker_config = None
     game_name = os.environ.get('GAME_NAME') or None
     setup = False
     create_test_game = False
@@ -34,7 +35,7 @@ def main(argv):
             sys.exit()
         elif opt in ("-t", "--tracker-config"):
             print(f'Tracker config path: {arg}')
-            tracker_config_path = arg
+            tracker_config = arg
         elif opt in ("-s", "--setup"):
             print('Running tracker setup')
             setup = True
@@ -48,10 +49,14 @@ def main(argv):
     if game_name is None:
         raise Exception("Game name not specified.")
 
+    if tracker_config is None:
+        tracker_config = tracker_config_path()
+    print(f'Using tracker config: {tracker_config}')
+
     if setup:
-        TrackerSetup(tracker_config_path, f'./src/games/{game_name.lower()}/game_config.yaml').start()
+        TrackerSetup(tracker_config, game_config_path(game_name)).start()
     else:
-        game_api = GameApi(game_name)
+        game_api = GameApi(game_name, tracker_config)
         if create_test_game:
             game_api.start_test_game_server()
         game_api.start()
@@ -60,7 +65,7 @@ def main(argv):
 def help_text():
     print("Usage:")
     print("\t--help (-h)                                     shows this help")
-    print("\t--tracker-config (-t) <path to tracker config>  sets path to tracker config")
+    print("\t--tracker-config (-t) <path to tracker config>  sets path to tracker config (default: ./config/tracker_config.yaml)")
     print("\t--setup (-s)                                    runs tracker setup")
     print("\t--game (-n) <game name>                         runs game server for given game (or set GAME_NAME)")
     print("\t--test (-d)                                     creates a test game with longer game time")

@@ -1,5 +1,7 @@
-import yaml
 import logging
+import os
+
+import yaml
 
 from shapely.geometry import Point as SPoint
 from shapely.geometry.polygon import Polygon as SPolygon
@@ -33,6 +35,22 @@ def read_config(config_path):
     """
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def config_dir() -> str:
+    """
+    Directory holding all config files: tracker_config.yaml and <game>/game_config.yaml.
+    Override with the CONFIG_DIR environment variable.
+    """
+    return os.environ.get('CONFIG_DIR') or './config'
+
+
+def tracker_config_path() -> str:
+    return os.path.join(config_dir(), 'tracker_config.yaml')
+
+
+def game_config_path(game_name: str) -> str:
+    return os.path.join(config_dir(), game_name.lower(), 'game_config.yaml')
 
 
 def create_logger(name: str, log_level: str) -> logging.Logger:
