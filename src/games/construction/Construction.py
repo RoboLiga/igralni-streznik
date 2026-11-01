@@ -12,7 +12,7 @@ from src.utils import create_logger, distance_squared, bilinear_point, check_if_
 
 
 def tree_field_name(row: int, col: int) -> str:
-    return f'game_field_{row}_{col}'
+    return f'tree_field_{row}_{col}'
 
 
 class Construction(GameServer):
@@ -168,24 +168,31 @@ class Construction(GameServer):
         # Calculate ran over trees
         team.score -= self.ran_over_trees
 
+    def is_tree_field_planted(self, tree_field: Field) -> bool:
+        return any(field is tree_field for field in self.planted_trees.values())
+
     def to_json(self):
         result = super().to_json()
-        # Tree fields are generated from game_field, so they are merged here instead of into the tracker's fields
-        if self.tree_fields:
-            result['fields'].update({name: field.to_json() for name, field in self.tree_fields.items()})
+        # Tree fields are generated from game_field, so they are kept separate from the tracker's fields
+        result['tree_fields'] = {
+            name: {**field.to_json(), 'planted': self.is_tree_field_planted(field)}
+            for name, field in (self.tree_fields or {}).items()
+        }
         return result
 
     @classmethod
     def to_model(cls, api: Api, game_config: Dict):
         result = super().to_model(api, game_config)
         tree_field_config = game_config['tree_fields']
-        field_names = game_config['fields_names'] + [
-            tree_field_name(row, col)
-            for row in range(tree_field_config['rows'])
-            for col in range(tree_field_config['columns'])
-        ]
-        result['fields'] = fields.Nested(api.model(
-            'Fields',
-            {f: fields.Nested(Field.to_model(api), required=False) for f in field_names})
+        tree_field_model = api.inherit('TreeField', Field.to_model(api), {
+            'planted': fields.Boolean(required=True, description='Whether a tree is planted in this field'),
+        })
+        result['tree_fields'] = fields.Nested(api.model(
+            'TreeFields',
+            {
+                tree_field_name(row, col): fields.Nested(tree_field_model, required=False)
+                for row in range(tree_field_config['rows'])
+                for col in range(tree_field_config['columns'])
+            })
         )
         return result

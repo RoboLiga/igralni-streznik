@@ -16,7 +16,7 @@ PINE_ID = 24
 STEEL_ID = 9
 BRICK_ID = 22
 
-CONFIG_PATH = Path(__file__).parents[3] / 'src' / 'games' / 'construction' / 'game_config.yaml'
+CONFIG_PATH = Path(__file__).parents[3] / 'config' / 'construction' / 'game_config.yaml'
 
 
 def rect(x0, y0, x1, y1) -> Field:
@@ -73,6 +73,8 @@ def game(config, clock, tmp_path, monkeypatch):
 
     construction = Construction(SimpleNamespace(state=state), config, [BUILDER_ID, GREEN_ID])
     construction.state_data = state
+    # Normally done in _run once the first state update arrives
+    construction.tree_fields = construction.generate_tree_fields()
     construction.cherry = CHERRY_ID
     construction.steel = STEEL_ID
     return construction
@@ -110,7 +112,7 @@ def test_tree_fields_cover_game_field(game, config):
     game.update_game_state()
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
     assert len(game.tree_fields) == rows * cols
-    cell = game.tree_fields['game_field_1_2']
+    cell = game.tree_fields['tree_field_1_2']
     assert check_if_object_in_area(Point(250, 150), cell)
     assert not check_if_object_in_area(Point(150, 150), cell)
 
@@ -119,19 +121,32 @@ def test_tree_fields_in_json(game, config):
     game.update_game_state()
     # Tracked stand-ins can't be serialized, only fields are checked here
     game.state_data.robots, game.state_data.objects, game.state_data.timestamp = {}, {}, 0
-    json_fields = game.to_json()['fields']
+    result = game.to_json()
+    assert set(result['fields']) == {'game_field', 'construction_site'}
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
-    assert set(json_fields) == {'game_field', 'construction_site'} | {
-        f'game_field_{row}_{col}' for row in range(rows) for col in range(cols)}
-    assert json_fields['game_field_1_2'] == game.tree_fields['game_field_1_2'].to_json()
+    assert set(result['tree_fields']) == {
+        f'tree_field_{row}_{col}' for row in range(rows) for col in range(cols)}
+    assert result['tree_fields']['tree_field_1_2'] == {
+        **game.tree_fields['tree_field_1_2'].to_json(), 'planted': False}
+
+
+def test_tree_fields_json_marks_planted(game, clock, config):
+    plant_trees(game, clock, config)
+    game.state_data.robots, game.state_data.objects, game.state_data.timestamp = {}, {}, 0
+    tree_fields = game.to_json()['tree_fields']
+    # Cherry at (50, 50) and pine at (150, 50) sit in the first two cells of the top row
+    planted = {name for name, field in tree_fields.items() if field['planted']}
+    assert planted == {'tree_field_0_0', 'tree_field_0_1'}
 
 
 def test_tree_fields_in_model(config):
     from flask_restx import Api
-    model_fields = Construction.to_model(Api(), config)['fields'].nested
-    assert 'game_field_0_0' in model_fields
-    assert f"game_field_{config['tree_fields']['rows'] - 1}_{config['tree_fields']['columns'] - 1}" in model_fields
-    assert set(config['fields_names']) <= set(model_fields)
+    model = Construction.to_model(Api(), config)
+    tree_model_fields = model['tree_fields'].nested
+    assert 'tree_field_0_0' in tree_model_fields
+    assert f"tree_field_{config['tree_fields']['rows'] - 1}_{config['tree_fields']['columns'] - 1}" in tree_model_fields
+    assert 'planted' in tree_model_fields['tree_field_0_0'].nested
+    assert set(model['fields'].nested) == set(config['fields_names'])
 
 
 def test_tree_not_planted_before_min_time(game, clock, config):
