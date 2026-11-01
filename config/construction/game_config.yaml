@@ -5,7 +5,7 @@ plant_min_distance_moved: 4
 plant_min_time_seconds: 5
 
 tree_fields:
-  columns: 5
+  columns: 7
   rows: 4
 
 points:

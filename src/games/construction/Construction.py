@@ -48,6 +48,8 @@ class Construction(GameServer):
         tree_fields: Dict[str, Field] = {}
         for row in range(rows):
             for col in range(cols):
+                if 1 <= row < cols and (col == 0 or col == cols - 1):
+                    continue
                 u0, u1 = col / cols, (col + 1) / cols
                 v0, v1 = row / rows, (row + 1) / rows
                 tree_fields[tree_field_name(row, col)] = Field(
