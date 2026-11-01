@@ -1,7 +1,7 @@
 name: roboliga
 
 services:
-  roboliga:
+  server:
     build: .
     environment:
       GAME_NAME: ${GAME_NAME:?set GAME_NAME, e.g. GAME_NAME=mine}
@@ -10,4 +10,10 @@ services:
     volumes:
       # tracker_config.yaml, saved_fields.pickle and <game>/game_config.yaml
       - ./config:/app/config
+    restart: unless-stopped
+
+  monitor:
+    build: ../monitor/roboliga-ui
+    ports:
+      - "80:80"
     restart: unless-stopped
