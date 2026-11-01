@@ -15,13 +15,15 @@ from src.restapi.ApiError import ApiError
 from src.servers.GameServer import GameServer
 from src.servers.StateServer import StateServer
 from src.servers.TrackerServer import TrackerServer
-from src.utils import read_config, create_logger
+from src.utils import read_config, create_logger, game_config_path
 
 
 class GameApi:
-    def __init__(self, game_name: str):
+    def __init__(self, game_name: str, tracker_config_path: str):
         freeze_support()
-        self.game_config: dict = read_config(f'./src/games/{game_name.lower()}/game_config.yaml')
+        config_path = game_config_path(game_name)
+        print(f'Using game config: {config_path}')
+        self.game_config: dict = read_config(config_path)
 
         logger = create_logger('restapi.GameApi', self.game_config['log_level'])
         logger.info('Started')
@@ -35,7 +37,7 @@ class GameApi:
         self.game_servers: Dict[str, GameServer] = {}
         self.server_queue: Queue = Queue()
 
-        self.tracker_server = TrackerServer(self.game_config)
+        self.tracker_server = TrackerServer(self.game_config, tracker_config_path)
         self.tracker_server.start()
 
         self.state_server: StateServer = StateServer(self.tracker_server, self.game_config)

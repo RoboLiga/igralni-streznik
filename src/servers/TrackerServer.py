@@ -17,7 +17,7 @@ class TrackerServer(Server):
 
     """
 
-    def __init__(self, game_config: dict):
+    def __init__(self, game_config: dict, tracker_config_path: str):
         Server.__init__(self)
 
         self.logger = create_logger('servers.TrackerServer', game_config['log_level'])
@@ -25,7 +25,7 @@ class TrackerServer(Server):
         self.state = None
         self.queue = Queue()
 
-        self.tracker = TrackerGame()
+        self.tracker = TrackerGame(tracker_config=tracker_config_path)
 
         self.p = Process(target=self.tracker.start, args=(self.queue,))
 

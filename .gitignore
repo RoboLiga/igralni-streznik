@@ -105,5 +105,6 @@ venv.bak/
 
 # videos
 *.mp4
-/saved_fields
-/saved_fields.pickle
+/config/saved_fields
+/config/saved_fields.pickle
+

@@ -15,8 +15,24 @@ dependencies = [
     "flask_httpauth==4.8.1",
     "pyyaml==6.0.3",
     "random_username==1.0.2",
-    "sledenje-objektom-2 @ git+https://github.com/RoboLiga/sledenje-objektom-2.git",
 ]
+
+[dependency-groups]
+# OpenCV with GUI support, needed for --setup and the tracker preview window
+gui = [
+    "sledenje-objektom-2[gui]",
+]
+# OpenCV without GUI support, for servers and containers
+headless = [
+    "sledenje-objektom-2[headless]",
+]
+
+[tool.uv.sources]
+sledenje-objektom-2 = { git = "https://github.com/RoboLiga/sledenje-objektom.git" }
 
 [tool.uv]
 package = false
+default-groups = ["gui"]
+conflicts = [
+    [{ group = "gui" }, { group = "headless" }],
+]
