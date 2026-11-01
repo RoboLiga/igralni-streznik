@@ -29,12 +29,18 @@ class Construction(GameServer):
         self.ran_over_trees: int = 0
         self.used_planted_trees: set[int] = set()
 
+    def _run(self):
+        # Fields are only known once the state server has parsed at least one tracker frame
+        self.state_server.updated.wait()
+        self.tree_fields = self.generate_tree_fields()
+        super()._run()
+
     def generate_tree_fields(self) -> Dict[str, Field]:
         """
         Splits game_field into a grid of Field cells, using bilinear interpolation of its
         four corners so the grid stays correct even if the field isn't a perfect rectangle.
         """
-        game_field = self.state_data.fields['game_field']
+        game_field = self.state_server.state.fields['game_field']
         tree_field_config = self.game_config['tree_fields']
         cols = tree_field_config['columns']
         rows = tree_field_config['rows']
@@ -79,8 +85,6 @@ class Construction(GameServer):
         return object_ids_with_types
 
     def update_game_state(self):
-        if self.tree_fields is None:
-            self.tree_fields = self.generate_tree_fields()
         self.update_trees()
         self.update_builder()
 
