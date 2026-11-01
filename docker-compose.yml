@@ -1,0 +1,13 @@
+name: roboliga
+
+services:
+  roboliga:
+    build: .
+    environment:
+      GAME_NAME: ${GAME_NAME:?set GAME_NAME, e.g. GAME_NAME=mine}
+    ports:
+      - "8088:8088"
+    volumes:
+      # tracker_config.yaml, saved_fields.pickle and <game>/game_config.yaml
+      - ./config:/app/config
+    restart: unless-stopped
