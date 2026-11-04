@@ -44,6 +44,9 @@ def config():
     game_config = read_config(CONFIG_PATH)
     # Robot ids change with every competition's team list, so tests use their own
     game_config['robots'] = {BUILDER_ID: 'Builder', GREEN_ID: 'Green'}
+    game_config['objects'] = {'trees': [CHERRY_ID, PINE_ID], 'construction_material': [STEEL_ID, BRICK_ID]}
+    game_config['cherry'] = CHERRY_ID
+    game_config['steel'] = STEEL_ID
     return game_config
 
 
@@ -75,8 +78,6 @@ def game(config, clock, tmp_path, monkeypatch):
     construction.state_data = state
     # Normally done in _run once the first state update arrives
     construction.tree_fields = construction.generate_tree_fields()
-    construction.cherry = CHERRY_ID
-    construction.steel = STEEL_ID
     return construction
 
 
@@ -139,6 +140,23 @@ def test_tree_fields_json_marks_planted(game, clock, config):
     assert planted == {'tree_field_0_0', 'tree_field_0_1'}
 
 
+def serializable(object_id):
+    return SimpleNamespace(id=object_id, to_json=lambda: {'id': object_id})
+
+
+def test_objects_in_json_have_types(game):
+    game.state_data.robots, game.state_data.timestamp = {}, 0
+    game.state_data.objects = {
+        'trees': {i: serializable(i) for i in (CHERRY_ID, PINE_ID)},
+        'construction_material': {i: serializable(i) for i in (STEEL_ID, BRICK_ID)},
+    }
+    objects = game.to_json()['objects']
+    assert objects['trees'][str(CHERRY_ID)]['type'] == 'cherry'
+    assert objects['trees'][str(PINE_ID)]['type'] == 'pine'
+    assert objects['construction_material'][str(STEEL_ID)]['type'] == 'steel'
+    assert objects['construction_material'][str(BRICK_ID)]['type'] == 'brick'
+
+
 def test_tree_fields_in_model(config):
     from flask_restx import Api
     model = Construction.to_model(Api(), config)
@@ -147,6 +165,8 @@ def test_tree_fields_in_model(config):
     assert f"tree_field_{config['tree_fields']['rows'] - 1}_{config['tree_fields']['columns'] - 1}" in tree_model_fields
     assert 'planted' in tree_model_fields['tree_field_0_0'].nested
     assert set(model['fields'].nested) == set(config['fields_names'])
+    tree_model = model['objects'].nested['trees'].nested[str(CHERRY_ID)].nested
+    assert 'type' in tree_model and 'position' in tree_model
 
 
 def test_tree_not_planted_before_min_time(game, clock, config):

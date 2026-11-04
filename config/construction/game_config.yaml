@@ -35,6 +35,10 @@ objects:
     - 42
     - 29
 
+# Which tree is the cherry and which construction material is the steel (must be ids from objects above)
+cherry: 24
+steel: 47
+
 robots:
   5: To ne pije vode
   12: Gruda
