@@ -1,8 +1,8 @@
 import time
-import random
 
 from flask_restx import Api, fields
 from sledilnik.classes.Field import Field
+from sledilnik.classes.ObjectTracker import ObjectTracker
 
 from src.games.construction.ConstructionTeam import ConstructionTeam, BUILDER_COLOR
 from src.servers.GameServer import GameServer
@@ -19,8 +19,12 @@ class Construction(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
         GameServer.__init__(self, state_server, game_config, teams)
         self.logger = create_logger('games.Construction', game_config['log_level'])
-        self.cherry = random.choice(self.game_config['objects']['trees'])
-        self.steel = random.choice(self.game_config['objects']['construction_material'])
+        self.cherry = self.game_config['cherry']
+        self.steel = self.game_config['steel']
+        if self.cherry not in self.game_config['objects']['trees']:
+            raise ValueError(f'Cherry id {self.cherry} is not listed in objects.trees')
+        if self.steel not in self.game_config['objects']['construction_material']:
+            raise ValueError(f'Steel id {self.steel} is not listed in objects.construction_material')
 
         # State data is only available once the game loop runs, so these are filled in on the first update
         self.tree_last_movement: dict[int, tuple] = dict()
@@ -180,6 +184,11 @@ class Construction(GameServer):
             name: {**field.to_json(), 'planted': self.is_tree_field_planted(field)}
             for name, field in (self.tree_fields or {}).items()
         }
+        # Everyone can see which tree is the cherry and which material is the steel
+        object_types = self.get_objects_with_types()
+        for objects in result['objects'].values():
+            for object_id, object_json in objects.items():
+                object_json['type'] = object_types[object_id]
         return result
 
     @classmethod
@@ -195,6 +204,20 @@ class Construction(GameServer):
                 tree_field_name(row, col): fields.Nested(tree_field_model, required=False)
                 for row in range(tree_field_config['rows'])
                 for col in range(tree_field_config['columns'])
+            })
+        )
+        typed_object_model = api.inherit('TypedObjectTracker', ObjectTracker.to_model(api), {
+            'type': fields.String(required=True, enum=['cherry', 'pine', 'steel', 'brick'],
+                                  description='Which kind of tree or construction material this object is'),
+        })
+        result['objects'] = fields.Nested(api.model(
+            'ConstructionObjects',
+            {
+                str(object_type): fields.Nested(api.model(
+                    f'ConstructionObjectType_{object_type}',
+                    {str(o): fields.Nested(typed_object_model, required=False) for o in object_ids}
+                ))
+                for object_type, object_ids in game_config['objects'].items()
             })
         )
         return result
