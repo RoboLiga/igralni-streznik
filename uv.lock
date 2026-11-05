@@ -796,10 +796,10 @@ dev = [
     { name = "pytest" },
 ]
 gui = [
-    { name = "sledenje-objektom-2", extra = ["gui"], marker = "extra == 'group-15-roboliga-server-gui'" },
+    { name = "sledenje-objektom", extra = ["gui"], marker = "extra == 'group-15-roboliga-server-gui'" },
 ]
 headless = [
-    { name = "sledenje-objektom-2", extra = ["headless"], marker = "extra == 'group-15-roboliga-server-headless'" },
+    { name = "sledenje-objektom", extra = ["headless"], marker = "extra == 'group-15-roboliga-server-headless'" },
 ]
 
 [package.metadata]
@@ -817,8 +817,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]
-gui = [{ name = "sledenje-objektom-2", extras = ["gui"], git = "https://github.com/RoboLiga/sledenje-objektom.git" }]
-headless = [{ name = "sledenje-objektom-2", extras = ["headless"], git = "https://github.com/RoboLiga/sledenje-objektom.git" }]
+gui = [{ name = "sledenje-objektom", extras = ["gui"], git = "https://github.com/RoboLiga/sledenje-objektom.git?tag=v1.1.1" }]
+headless = [{ name = "sledenje-objektom", extras = ["headless"], git = "https://github.com/RoboLiga/sledenje-objektom.git?tag=v1.1.1" }]
 
 [[package]]
 name = "rpds-py"
@@ -980,9 +980,9 @@ wheels = [
 ]
 
 [[package]]
-name = "sledenje-objektom-2"
-version = "1.0.0"
-source = { git = "https://github.com/RoboLiga/sledenje-objektom.git#7e4244d86fecdf8d64164319a8e965bd25d9bc61" }
+name = "sledenje-objektom"
+version = "1.1.1"
+source = { git = "https://github.com/RoboLiga/sledenje-objektom.git?tag=v1.1.1#e02a5358d7bf6585750bc3adb3c05456b2ed53ba" }
 dependencies = [
     { name = "numpy" },
     { name = "pyyaml" },
