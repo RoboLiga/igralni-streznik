@@ -3,6 +3,8 @@ name: roboliga
 services:
   server:
     build: .
+    env_file:
+      - .env
     environment:
       GAME_NAME: ${GAME_NAME:?set GAME_NAME, e.g. GAME_NAME=mine}
     ports:
@@ -14,6 +16,10 @@ services:
 
   monitor:
     build: ../monitor/roboliga-ui
+    env_file:
+      - .env
+    environment:
+      NUXT_PUBLIC_BASE_API_URL: ${NUXT_PUBLIC_BASE_API_URL:?NUXT_PUBLIC_BASE_API_URL is required}
     ports:
       - "80:80"
     restart: unless-stopped

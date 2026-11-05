@@ -108,3 +108,5 @@ venv.bak/
 /config/saved_fields
 /config/saved_fields.pickle
 
+# Local dev
+docker-compose.override.yaml
