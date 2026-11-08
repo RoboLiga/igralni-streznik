@@ -109,13 +109,45 @@ def test_objects_with_types_reveal_cherry_and_steel(game, config):
     assert len(objects_with_types) == sum(len(ids) for ids in config['objects'].values())
 
 
-def test_tree_fields_cover_game_field(game, config):
-    game.update_game_state()
+def expected_tree_field_names(rows, cols):
+    """All grid cells except the bases: first and last column of every row but the first and last."""
+    names = {f'tree_field_{row}_{col}' for row in range(rows) for col in range(cols)}
+    for row in range(1, rows - 1):
+        names -= {f'tree_field_{row}_0', f'tree_field_{row}_{cols - 1}'}
+    return names
+
+
+def test_tree_fields_skip_bases(game, config):
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
-    assert len(game.tree_fields) == rows * cols
+    assert set(game.tree_fields) == expected_tree_field_names(rows, cols)
+    assert len(game.tree_fields) == rows * cols - 2 * (rows - 2)
+    # First and last rows span the whole width
+    for row in (0, rows - 1):
+        for col in range(cols):
+            assert f'tree_field_{row}_{col}' in game.tree_fields
+    # Middle rows have bases on both ends
+    for row in range(1, rows - 1):
+        assert f'tree_field_{row}_0' not in game.tree_fields
+        assert f'tree_field_{row}_{cols - 1}' not in game.tree_fields
+        assert f'tree_field_{row}_1' in game.tree_fields
+        assert f'tree_field_{row}_{cols - 2}' in game.tree_fields
+
+
+def test_tree_fields_cover_game_field(game, config):
+    # 500x400 game field split into 7 columns (~71.4 wide) and 4 rows (100 tall)
     cell = game.tree_fields['tree_field_1_2']
-    assert check_if_object_in_area(Point(250, 150), cell)
-    assert not check_if_object_in_area(Point(150, 150), cell)
+    assert check_if_object_in_area(Point(180, 150), cell)
+    assert not check_if_object_in_area(Point(250, 150), cell)
+    assert not check_if_object_in_area(Point(180, 250), cell)
+    assert check_if_object_in_area(Point(20, 350), game.tree_fields['tree_field_3_0'])
+
+
+def test_tree_in_base_is_not_planted(game, clock, config):
+    # (20, 150) is in row 1, column 0, which is a base
+    game.state_data.objects['trees'][PINE_ID] = tracked(20, 150)
+    plant_trees(game, clock, config)
+    assert PINE_ID not in game.planted_trees
+    assert green(game).score == config['points']['cherry']
 
 
 def test_tree_fields_in_json(game, config):
@@ -125,8 +157,7 @@ def test_tree_fields_in_json(game, config):
     result = game.to_json()
     assert set(result['fields']) == {'game_field', 'construction_site'}
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
-    assert set(result['tree_fields']) == {
-        f'tree_field_{row}_{col}' for row in range(rows) for col in range(cols)}
+    assert set(result['tree_fields']) == expected_tree_field_names(rows, cols)
     assert result['tree_fields']['tree_field_1_2'] == {
         **game.tree_fields['tree_field_1_2'].to_json(), 'planted': False}
 
@@ -135,9 +166,9 @@ def test_tree_fields_json_marks_planted(game, clock, config):
     plant_trees(game, clock, config)
     game.state_data.robots, game.state_data.objects, game.state_data.timestamp = {}, {}, 0
     tree_fields = game.to_json()['tree_fields']
-    # Cherry at (50, 50) and pine at (150, 50) sit in the first two cells of the top row
+    # Cherry at (50, 50) and pine at (150, 50) sit in the first and third cells of the top row
     planted = {name for name, field in tree_fields.items() if field['planted']}
-    assert planted == {'tree_field_0_0', 'tree_field_0_1'}
+    assert planted == {'tree_field_0_0', 'tree_field_0_2'}
 
 
 def serializable(object_id):
@@ -161,8 +192,8 @@ def test_tree_fields_in_model(config):
     from flask_restx import Api
     model = Construction.to_model(Api(), config)
     tree_model_fields = model['tree_fields'].nested
-    assert 'tree_field_0_0' in tree_model_fields
-    assert f"tree_field_{config['tree_fields']['rows'] - 1}_{config['tree_fields']['columns'] - 1}" in tree_model_fields
+    rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
+    assert set(tree_model_fields) == expected_tree_field_names(rows, cols)
     assert 'planted' in tree_model_fields['tree_field_0_0'].nested
     assert set(model['fields'].nested) == set(config['fields_names'])
     tree_model = model['objects'].nested['trees'].nested[str(CHERRY_ID)].nested
