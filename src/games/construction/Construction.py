@@ -15,6 +15,16 @@ def tree_field_name(row: int, col: int) -> str:
     return f'tree_field_{row}_{col}'
 
 
+def is_tree_field(row: int, col: int, rows: int, cols: int) -> bool:
+    """
+    The first and last rows span the whole width, in the rows between them
+    the first and last columns are bases, so they aren't tree fields.
+    """
+    is_middle_row = 0 < row < rows - 1
+    is_edge_col = col == 0 or col == cols - 1
+    return not (is_middle_row and is_edge_col)
+
+
 class Construction(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
         GameServer.__init__(self, state_server, game_config, teams)
@@ -53,7 +63,7 @@ class Construction(GameServer):
         tree_fields: Dict[str, Field] = {}
         for row in range(rows):
             for col in range(cols):
-                if 1 <= row < cols and (col == 0 or col == cols - 1):
+                if not is_tree_field(row, col, rows, cols):
                     continue
                 u0, u1 = col / cols, (col + 1) / cols
                 v0, v1 = row / rows, (row + 1) / rows
@@ -198,7 +208,7 @@ class Construction(GameServer):
     @classmethod
     def to_model(cls, api: Api, game_config: Dict):
         result = super().to_model(api, game_config)
-        tree_field_config = game_config['tree_fields']
+        rows, cols = game_config['tree_fields']['rows'], game_config['tree_fields']['columns']
         tree_field_model = api.inherit('TreeField', Field.to_model(api), {
             'planted': fields.Boolean(required=True, description='Whether a tree is planted in this field'),
         })
@@ -206,8 +216,9 @@ class Construction(GameServer):
             'TreeFields',
             {
                 tree_field_name(row, col): fields.Nested(tree_field_model, required=False)
-                for row in range(tree_field_config['rows'])
-                for col in range(tree_field_config['columns'])
+                for row in range(rows)
+                for col in range(cols)
+                if is_tree_field(row, col, rows, cols)
             })
         )
         typed_object_model = api.inherit('TypedObjectTracker', ObjectTracker.to_model(api), {
