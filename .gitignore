@@ -110,3 +110,6 @@ venv.bak/
 
 # Local dev
 docker-compose.override.yaml
+
+# IDE
+.idea
