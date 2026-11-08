@@ -271,10 +271,53 @@ def test_delivered_materials_score(game, config):
     game.state_data.objects['construction_material'][BRICK_ID] = tracked(620, 80)
     game.update_game_state()
     assert builder(game).score == config['points']['steel'] + config['points']['brick']
+    assert game.delivered_materials == {STEEL_ID, BRICK_ID}
+
+
+def test_delivered_material_scores_only_once_across_ticks(game, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    for _ in range(5):
+        game.update_game_state()
+    assert builder(game).score == config['points']['steel']
+
+
+def test_material_leaving_site_keeps_points(game, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.update_game_state()
 
     game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
     game.update_game_state()
-    assert builder(game).score == config['points']['brick']
+    assert builder(game).score == config['points']['steel']
+    assert STEEL_ID in game.delivered_materials
+
+
+def test_redelivered_material_does_not_score_again(game, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.update_game_state()
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
+    game.update_game_state()
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(680, 20)
+    game.update_game_state()
+    assert builder(game).score == config['points']['steel']
+
+
+def test_material_missing_from_state_keeps_points(game, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.update_game_state()
+    # The tracker can lose sight of a material, e.g. when the robot covers it
+    del game.state_data.objects['construction_material'][STEEL_ID]
+    game.update_game_state()
+    assert builder(game).score == config['points']['steel']
+
+
+def test_delivered_points_survive_penalties(game, clock, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.update_game_state()
+    plant_trees(game, clock, config)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert builder(game).score == config['points']['steel'] - config['points']['pine']
 
 
 def test_builder_score_combines_materials_and_penalties(game, clock, config):

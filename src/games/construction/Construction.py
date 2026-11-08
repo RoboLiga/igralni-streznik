@@ -32,6 +32,7 @@ class Construction(GameServer):
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
         self.used_planted_trees: set[int] = set()
+        self.delivered_materials: set[int] = set()
 
     def _run(self):
         # Fields are only known once the state server has parsed at least one tracker frame
@@ -161,18 +162,21 @@ class Construction(GameServer):
                     self.game_config['points']['pine']
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been ran over.")
 
-        # Now calculate the current score
-        team.score = 0
-        # Check if materials delivered
+        # Each material only scores the first time it is delivered, it keeps its points even if it leaves the site
         construction_site_field = self.state_data.fields['construction_site']
         for material_id, material in self.state_data.objects['construction_material'].items():
+            if material_id in self.delivered_materials:
+                continue
             if not check_if_object_in_area(material.position, construction_site_field):
                 continue
-            team.score += self.game_config['points']['steel'] if material_id == self.steel else \
-                self.game_config['points']['brick']
+            self.delivered_materials.add(material_id)
+            self.logger.info(f"Construction material (ID: {material_id}) has been delivered.")
 
-        # Calculate ran over trees
-        team.score -= self.ran_over_trees
+        # Now calculate the current score
+        team.score = sum(
+            self.game_config['points']['steel'] if material_id == self.steel else self.game_config['points']['brick']
+            for material_id in self.delivered_materials
+        ) - self.ran_over_trees
 
     def is_tree_field_planted(self, tree_field: Field) -> bool:
         return any(field is tree_field for field in self.planted_trees.values())
