@@ -8,7 +8,7 @@ from src.games.construction.ConstructionTeam import ConstructionTeam, BUILDER_CO
 from src.servers.GameServer import GameServer
 from typing import Dict, List, Optional, cast
 
-from src.utils import create_logger, distance_squared, bilinear_point, check_if_object_in_area
+from src.utils import create_logger, bilinear_point, check_if_object_in_area
 
 
 def tree_field_name(row: int, col: int) -> str:
@@ -37,7 +37,8 @@ class Construction(GameServer):
             raise ValueError(f'Steel id {self.steel} is not listed in objects.construction_material')
 
         # State data is only available once the game loop runs, so these are filled in on the first update
-        self.tree_last_movement: dict[int, tuple] = dict()
+        # When each tree entered the tree field it's in (None while it's outside all tree fields)
+        self.tree_timers: dict[int, tuple[float, Optional[Field]]] = dict()
         self.tree_fields: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
@@ -107,35 +108,31 @@ class Construction(GameServer):
 
     def update_trees(self):
         """
-        Adds planted trees if a tree hasn't moved for more the time set in game config and hasn't been run over yet
+        Plants a tree once it has stayed inside the same tree field for the time set in game config
         """
         # Start tracking trees the first time they are seen
         for tree_id, tree in self.state_data.objects['trees'].items():
-            if tree_id not in self.tree_last_movement:
-                self.tree_last_movement[tree_id] = (time.time(), tree.position)
+            if tree_id not in self.tree_timers:
+                self.tree_timers[tree_id] = (time.time(), self.find_tree_field(tree.position))
 
-        for tree_id, movement_data in self.tree_last_movement.items():
+        for tree_id, (entered_at, timer_field) in list(self.tree_timers.items()):
             if tree_id not in self.state_data.objects['trees']:
                 self.logger.warning(f"Tracked tree (ID: {tree_id}) is not in the state data!")
                 continue
-            tree_position = self.state_data.objects['trees'][tree_id].position
-            # Update tree movement data if changed
-            if distance_squared(movement_data[1], tree_position) > self.game_config['plant_min_distance_moved'] ** 2:
-                self.tree_last_movement[tree_id] = (time.time(), tree_position)
+            field = self.find_tree_field(self.state_data.objects['trees'][tree_id].position)
+            # Moving inside a tree field keeps the timer, leaving it cancels the timer and unplants the tree
+            if field is not timer_field:
+                self.tree_timers[tree_id] = (time.time(), field)
                 if tree_id in self.planted_trees:
                     self.planted_trees.pop(tree_id)
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
                 continue
 
-            if tree_id in self.planted_trees:
+            if field is None or tree_id in self.planted_trees:
                 continue
 
             # Plant eligible trees
-            if time.time() - movement_data[0] > self.game_config['plant_min_time_seconds']:
-                field = next(filter(lambda tree_field: check_if_object_in_area(tree_position, tree_field),
-                                    self.tree_fields.values()), None)
-                if field is None:
-                    continue
+            if time.time() - entered_at > self.game_config['plant_min_time_seconds']:
                 self.planted_trees[tree_id] = field
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
 
@@ -165,9 +162,8 @@ class Construction(GameServer):
                 if not check_if_object_in_area(robot.position, field):
                     continue
                 self.planted_trees.pop(tree_id)
-                tree = self.state_data.objects['trees'].get(tree_id)
-                tree_position = tree.position if tree is not None else self.tree_last_movement[tree_id][1]
-                self.tree_last_movement[tree_id] = (time.time(), tree_position)
+                # The tree is still in its field, it just has to wait out the timer again
+                self.tree_timers[tree_id] = (time.time(), field)
                 self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
                     self.game_config['points']['pine']
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been ran over.")
@@ -187,6 +183,10 @@ class Construction(GameServer):
             self.game_config['points']['steel'] if material_id == self.steel else self.game_config['points']['brick']
             for material_id in self.delivered_materials
         ) - self.ran_over_trees
+
+    def find_tree_field(self, position) -> Optional[Field]:
+        return next(filter(lambda tree_field: check_if_object_in_area(position, tree_field),
+                           self.tree_fields.values()), None)
 
     def is_tree_field_planted(self, tree_field: Field) -> bool:
         return any(field is tree_field for field in self.planted_trees.values())
