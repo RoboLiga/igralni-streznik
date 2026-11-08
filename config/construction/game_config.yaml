@@ -1,7 +1,6 @@
 game_time: 180
 log_level: 'INFO'
 
-plant_min_distance_moved: 4
 plant_min_time_seconds: 5
 
 tree_fields:
