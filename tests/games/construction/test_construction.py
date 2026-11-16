@@ -223,13 +223,68 @@ def test_planted_tree_scores_only_once_across_ticks(game, clock, config):
     assert green(game).score == score
 
 
-def test_small_jitter_does_not_reset_tree(game, clock, config):
+def move_tree(game, tree_id, x, y):
+    game.state_data.objects['trees'][tree_id] = tracked(x, y)
+
+
+def test_moving_inside_tree_field_keeps_timer(game, clock, config):
     game.update_game_state()
-    jitter = config['plant_min_distance_moved'] - 1
-    game.state_data.objects['trees'][PINE_ID] = tracked(150 + jitter, 50)
-    clock.advance(config['plant_min_time_seconds'] + 1)
+    clock.advance(config['plant_min_time_seconds'] - 1)
+    # Tree field 0_2 spans x from ~142.9 to ~214.3
+    move_tree(game, PINE_ID, 200, 80)
+    game.update_game_state()
+    assert PINE_ID not in game.planted_trees
+    clock.advance(2)
     game.update_game_state()
     assert PINE_ID in game.planted_trees
+    assert game.planted_trees[PINE_ID] is game.tree_fields['tree_field_0_2']
+
+
+def test_moving_to_another_tree_field_restarts_timer(game, clock, config):
+    game.update_game_state()
+    clock.advance(config['plant_min_time_seconds'] - 1)
+    move_tree(game, PINE_ID, 250, 50)
+    game.update_game_state()
+    clock.advance(2)
+    game.update_game_state()
+    assert PINE_ID not in game.planted_trees
+
+    clock.advance(config['plant_min_time_seconds'])
+    game.update_game_state()
+    assert game.planted_trees[PINE_ID] is game.tree_fields['tree_field_0_3']
+
+
+def test_leaving_and_returning_to_tree_field_restarts_timer(game, clock, config):
+    game.update_game_state()
+    clock.advance(config['plant_min_time_seconds'] - 1)
+    move_tree(game, PINE_ID, 150, -50)
+    game.update_game_state()
+    move_tree(game, PINE_ID, 150, 50)
+    game.update_game_state()
+    clock.advance(2)
+    game.update_game_state()
+    assert PINE_ID not in game.planted_trees
+
+    clock.advance(config['plant_min_time_seconds'])
+    game.update_game_state()
+    assert PINE_ID in game.planted_trees
+
+
+def test_tree_outside_tree_fields_is_never_planted(game, clock, config):
+    move_tree(game, PINE_ID, 150, -50)
+    plant_trees(game, clock, config)
+    clock.advance(config['plant_min_time_seconds'] * 10)
+    game.update_game_state()
+    assert PINE_ID not in game.planted_trees
+
+
+def test_planted_tree_moving_inside_its_field_stays_planted(game, clock, config):
+    plant_trees(game, clock, config)
+    score = green(game).score
+    move_tree(game, PINE_ID, 200, 80)
+    game.update_game_state()
+    assert PINE_ID in game.planted_trees
+    assert green(game).score == score
 
 
 def test_moving_tree_unplants_it(game, clock, config):
