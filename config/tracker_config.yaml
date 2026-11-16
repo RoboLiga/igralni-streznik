@@ -1,4 +1,4 @@
-debug: true
+debug: false
 undistort: true
 
 # Pickle file that contains fields
