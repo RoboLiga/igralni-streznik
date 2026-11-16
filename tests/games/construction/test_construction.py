@@ -329,6 +329,43 @@ def test_ran_over_tree_can_be_replanted(game, clock, config):
     assert PINE_ID in game.planted_trees
 
 
+def test_builder_sitting_in_field_is_not_penalized_for_replanted_tree(game, clock, config):
+    plant_trees(game, clock, config)
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert builder(game).score == -config['points']['pine']
+
+    # The tree gets replanted while the builder never left its field
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    game.update_game_state()
+    assert PINE_ID in game.planted_trees
+    assert builder(game).score == -config['points']['pine']
+
+
+def test_builder_leaving_and_returning_is_penalized_again(game, clock, config):
+    plant_trees(game, clock, config)
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+
+    game.state_data.robots[BUILDER_ID] = tracked(-50, -50)
+    game.update_game_state()
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert PINE_ID not in game.planted_trees
+    assert builder(game).score == -2 * config['points']['pine']
+
+
+def test_builder_sitting_in_field_is_penalized_for_first_planting(game, clock, config):
+    # The builder is already in the field before the tree was ever planted there
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    plant_trees(game, clock, config)
+    assert PINE_ID not in game.planted_trees
+    assert builder(game).score == -config['points']['pine']
+
+
 def test_missing_builder_does_not_crash(game, clock, config):
     plant_trees(game, clock, config)
     del game.state_data.robots[BUILDER_ID]
