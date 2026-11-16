@@ -42,6 +42,8 @@ class Construction(GameServer):
         self.tree_fields: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
+        # Tree fields the builder has lost points in and hasn't left since
+        self.penalized_fields: set[Field] = set()
         self.used_planted_trees: set[int] = set()
         self.delivered_materials: set[int] = set()
 
@@ -158,15 +160,24 @@ class Construction(GameServer):
 
         # Check if any trees were ran over (skipped while the builder isn't detected)
         if robot is not None:
+            # Leaving a field lets the builder be penalized in it again
+            self.penalized_fields = {field for field in self.penalized_fields
+                                     if check_if_object_in_area(robot.position, field)}
+            newly_penalized_fields: set[Field] = set()
             for tree_id, field in list(self.planted_trees.items()):
                 if not check_if_object_in_area(robot.position, field):
                     continue
+                # A tree replanted while the builder is still sitting in the field doesn't cost them again
+                if field in self.penalized_fields:
+                    continue
+                newly_penalized_fields.add(field)
                 self.planted_trees.pop(tree_id)
                 # The tree is still in its field, it just has to wait out the timer again
                 self.tree_timers[tree_id] = (time.time(), field)
                 self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
                     self.game_config['points']['pine']
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been ran over.")
+            self.penalized_fields |= newly_penalized_fields
 
         # Each material only scores the first time it is delivered, it keeps its points even if it leaves the site
         construction_site_field = self.state_data.fields['construction_site']
