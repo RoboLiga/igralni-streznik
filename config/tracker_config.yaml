@@ -9,8 +9,10 @@ fields_path: "./config/saved_fields.pickle"
 video_source: 'http://192.168.1.87/mjpg/video.mjpg'
 
 object_timeout: 30
-pos_limit_x: [-50, 3600]
-pos_limit_y: [-50, 2100]
+# Objects outside these limits are dropped. The game field is 0-3600 x 0-2100 (map_virtual_corners),
+# with the same 50 of slack on every side.
+pos_limit_x: [-50, 3650]
+pos_limit_y: [-50, 2150]
 map_virtual_corners: [
   [0, 0],
   [3600, 0],

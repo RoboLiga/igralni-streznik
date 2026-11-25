@@ -374,6 +374,13 @@ def test_missing_builder_does_not_crash(game, clock, config):
     assert builder(game).score == 0
 
 
+def test_object_listed_as_material_and_tree_is_rejected(config, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    config['objects']['trees'].append(BRICK_ID)
+    with pytest.raises(ValueError):
+        Construction(SimpleNamespace(state=StateLiveData(config)), config, [BUILDER_ID, GREEN_ID])
+
+
 def test_tree_seen_after_start_is_tracked(game, clock, config):
     game.update_game_state()
     game.state_data.objects['trees'][30] = tracked(250, 250)
