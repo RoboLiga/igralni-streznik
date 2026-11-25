@@ -1,5 +1,3 @@
-import time
-
 from flask_restx import Api, fields
 from sledilnik.classes.Field import Field
 from sledilnik.classes.ObjectTracker import ObjectTracker
@@ -36,9 +34,13 @@ class Construction(GameServer):
         if self.steel not in self.game_config['objects']['construction_material']:
             raise ValueError(f'Steel id {self.steel} is not listed in objects.construction_material')
 
-        # State data is only available once the game loop runs, so these are filled in on the first update
-        # When each tree entered the tree field it's in (None while it's outside all tree fields)
+        # State data is only available once the game loop runs, so these are filled in on the first update.
+        # Times are game time (self.timer), which stands still while the game is paused.
+        # When each tree entered the tree field it's in (None while it's outside all tree fields).
+        # The trees in a field queue up in this order.
         self.tree_timers: dict[int, tuple[float, Optional[Field]]] = dict()
+        # The planting timer of each tree field: the first tree in its queue and since when it has been timed
+        self.plant_timers: dict[Field, tuple[int, float]] = dict()
         self.tree_fields: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
@@ -52,6 +54,13 @@ class Construction(GameServer):
         self.state_server.updated.wait()
         self.tree_fields = self.generate_tree_fields()
         super()._run()
+
+    def start_game(self):
+        if not self.game_on:
+            # Starting again restarts game time from zero, so earlier times would be in the future
+            self.tree_timers.clear()
+            self.plant_timers.clear()
+        super().start_game()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
         """
@@ -110,31 +119,43 @@ class Construction(GameServer):
 
     def update_trees(self):
         """
-        Plants a tree once it has stayed inside the same tree field for the time set in game config
+        Plants trees, one per tree field. The trees in a field queue up in the order they entered it, and only
+        the first one is timed: it is planted once it has been timed for the time set in game config. When it
+        leaves the field, the next tree's timer starts. When the builder runs it over, it stays first and its
+        own timer starts again (see update_builder).
         """
         # Start tracking trees the first time they are seen
         for tree_id, tree in self.state_data.objects['trees'].items():
             if tree_id not in self.tree_timers:
-                self.tree_timers[tree_id] = (time.time(), self.find_tree_field(tree.position))
+                self.tree_timers[tree_id] = (self.timer.get(), self.find_tree_field(tree.position))
 
         for tree_id, (entered_at, timer_field) in list(self.tree_timers.items()):
             if tree_id not in self.state_data.objects['trees']:
                 self.logger.warning(f"Tracked tree (ID: {tree_id}) is not in the state data!")
                 continue
             field = self.find_tree_field(self.state_data.objects['trees'][tree_id].position)
-            # Moving inside a tree field keeps the timer, leaving it cancels the timer and unplants the tree
+            # Moving inside a tree field keeps the tree's place in the queue, leaving it unplants the tree
             if field is not timer_field:
-                self.tree_timers[tree_id] = (time.time(), field)
+                self.tree_timers[tree_id] = (self.timer.get(), field)
                 if tree_id in self.planted_trees:
                     self.planted_trees.pop(tree_id)
                     self.logger.info(f"Tracked tree (ID: {tree_id}) has been unplanted.")
-                continue
 
-            if field is None or tree_id in self.planted_trees:
+        for field in self.tree_fields.values():
+            queue = sorted((entered_at, tree_id) for tree_id, (entered_at, tree_field) in self.tree_timers.items()
+                           if tree_field is field)
+            if not queue:
+                self.plant_timers.pop(field, None)
+                continue
+            tree_id = queue[0][1]
+            # The first tree just entered an empty field, or the one before it left: its timer starts now
+            if self.plant_timers.get(field, (None, None))[0] != tree_id:
+                self.plant_timers[field] = (tree_id, self.timer.get())
+            if tree_id in self.planted_trees:
                 continue
 
             # Plant eligible trees
-            if time.time() - entered_at > self.game_config['plant_min_time_seconds']:
+            if self.timer.get() - self.plant_timers[field][1] > self.game_config['plant_min_time_seconds']:
                 self.planted_trees[tree_id] = field
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been planted.")
 
@@ -172,8 +193,8 @@ class Construction(GameServer):
                     continue
                 newly_penalized_fields.add(field)
                 self.planted_trees.pop(tree_id)
-                # The tree is still in its field, it just has to wait out the timer again
-                self.tree_timers[tree_id] = (time.time(), field)
+                # The tree stays first in its field's queue, it just has to wait out the timer again
+                self.plant_timers[field] = (tree_id, self.timer.get())
                 self.ran_over_trees += self.game_config['points']['cherry'] if tree_id == self.cherry else \
                     self.game_config['points']['pine']
                 self.logger.info(f"Tracked tree (ID: {tree_id}) has been ran over.")
