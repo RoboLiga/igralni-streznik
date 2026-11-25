@@ -13,10 +13,10 @@ points:
   pine: 2
   cherry: 4
 
+# Fields clicked in the tracker setup. The bases and tree fields are generated from game_field's grid: the construction
+# site is in the first column (at the corners clicked first and last) and the environmentalists' base in the last.
 fields_names:
   - game_field
-  - construction_site
-  - environmentalists
 
 objects:
   construction_material:
