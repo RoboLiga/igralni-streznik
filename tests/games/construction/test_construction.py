@@ -451,6 +451,30 @@ def test_restarted_game_times_trees_from_the_start(game, clock, config):
     assert PINE_ID in game.planted_trees
 
 
+def test_restarted_game_starts_from_scratch(game, clock, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    plant_trees(game, clock, config)
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert builder(game).score == config['points']['steel'] - config['points']['pine']
+    game.stop_game()
+
+    # Nothing from the first game carries over: not the deliveries, the penalties or the planted trees
+    del game.state_data.objects['construction_material'][STEEL_ID]
+    del game.state_data.robots[BUILDER_ID]
+    game.start_game()
+    game.update_game_state()
+    assert builder(game).score == 0
+    assert green(game).score == 0
+    assert game.planted_trees == {}
+
+    # Trees that scored in the first game score again in the new one
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    assert set(game.planted_trees) == {CHERRY_ID, PINE_ID}
+    assert green(game).score == config['points']['cherry'] + config['points']['pine']
+
+
 def test_missing_builder_does_not_crash(game, clock, config):
     plant_trees(game, clock, config)
     del game.state_data.robots[BUILDER_ID]

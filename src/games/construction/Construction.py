@@ -41,13 +41,21 @@ class Construction(GameServer):
         self.tree_timers: dict[int, tuple[float, Optional[Field]]] = dict()
         # The planting timer of each tree field: the first tree in its queue and since when it has been timed
         self.plant_timers: dict[Field, tuple[int, float]] = dict()
-        self.tree_fields: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
         # Tree fields the builder has lost points in and hasn't left since
         self.penalized_fields: set[Field] = set()
         self.used_planted_trees: set[int] = set()
         self.delivered_materials: set[int] = set()
+
+    def reset_game_state(self):
+        self.tree_timers.clear()
+        self.plant_timers.clear()
+        self.planted_trees.clear()
+        self.ran_over_trees = 0
+        self.penalized_fields.clear()
+        self.used_planted_trees.clear()
+        self.delivered_materials.clear()
 
     def _run(self):
         # Fields are only known once the state server has parsed at least one tracker frame
@@ -57,9 +65,8 @@ class Construction(GameServer):
 
     def start_game(self):
         if not self.game_on:
-            # Starting again restarts game time from zero, so earlier times would be in the future
-            self.tree_timers.clear()
-            self.plant_timers.clear()
+            # A new game starts from scratch, and game time restarts from zero so earlier times would be in the future
+            self.reset_game_state()
         super().start_game()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
