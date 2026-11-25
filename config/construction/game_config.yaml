@@ -10,14 +10,15 @@ tree_fields:
 points:
   steel: 4
   brick: 2
-  pine: 2
-  cherry: 4
+  pine: 1
+  cherry: 2
 
 fields_names:
   - game_field
   - construction_site
   - environmentalists
 
+# TODO: id 29 is duplicated
 objects:
   construction_material:
     - 47
@@ -47,7 +48,7 @@ robots:
   25: Bajtmani
   32: The Cutie Mark Crusaders
   33: Išaki
-  34: Lolek & Bolek
+  34: Loleka & Bolek
   35: Toeto
   37: Miha++
   39: Loose screws

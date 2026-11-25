@@ -35,6 +35,10 @@ class Construction(GameServer):
             raise ValueError(f'Cherry id {self.cherry} is not listed in objects.trees')
         if self.steel not in self.game_config['objects']['construction_material']:
             raise ValueError(f'Steel id {self.steel} is not listed in objects.construction_material')
+        listed_twice = set(self.game_config['objects']['construction_material']) & set(self.game_config['objects']['trees'])
+        if listed_twice:
+            # Such an object would score both as material and as a tree
+            raise ValueError(f'Ids {sorted(listed_twice)} are listed in both objects.construction_material and objects.trees')
 
         # State data is only available once the game loop runs, so these are filled in on the first update
         # When each tree entered the tree field it's in (None while it's outside all tree fields)
