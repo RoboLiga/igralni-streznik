@@ -25,6 +25,23 @@ def is_tree_field(row: int, col: int, rows: int, cols: int) -> bool:
     return not (is_middle_row and is_edge_col)
 
 
+# The bases, in the order of the grid columns they take up: the first and the last
+BASE_NAMES = ('construction_site', 'environmentalists')
+
+
+def grid_part(game_field: Field, u0: float, v0: float, u1: float, v1: float) -> Field:
+    """
+    The part of game_field from u0 to u1 across and from v0 to v1 down (fractions of its width and height),
+    using bilinear interpolation of its four corners so it stays correct even if the field isn't a perfect rectangle.
+    """
+    def corner(u: float, v: float):
+        return bilinear_point(game_field.top_left, game_field.top_right,
+                              game_field.bottom_left, game_field.bottom_right, u, v)
+
+    return Field(top_left=corner(u0, v0), top_right=corner(u1, v0),
+                 bottom_left=corner(u0, v1), bottom_right=corner(u1, v1))
+
+
 class Construction(GameServer):
     def __init__(self, state_server, game_config, teams: List[int]):
         GameServer.__init__(self, state_server, game_config, teams)
@@ -40,6 +57,7 @@ class Construction(GameServer):
         # When each tree entered the tree field it's in (None while it's outside all tree fields)
         self.tree_timers: dict[int, tuple[float, Optional[Field]]] = dict()
         self.tree_fields: Optional[Dict[str, Field]] = None
+        self.bases: Optional[Dict[str, Field]] = None
         self.planted_trees: dict[int, Field] = dict()
         self.ran_over_trees: int = 0
         # Tree fields the builder has lost points in and hasn't left since
@@ -51,12 +69,12 @@ class Construction(GameServer):
         # Fields are only known once the state server has parsed at least one tracker frame
         self.state_server.updated.wait()
         self.tree_fields = self.generate_tree_fields()
+        self.bases = self.generate_bases()
         super()._run()
 
     def generate_tree_fields(self) -> Dict[str, Field]:
         """
-        Splits game_field into a grid of Field cells, using bilinear interpolation of its
-        four corners so the grid stays correct even if the field isn't a perfect rectangle.
+        Splits game_field into a grid of Field cells (see grid_part)
         """
         game_field = self.state_server.state.fields['game_field']
         tree_field_config = self.game_config['tree_fields']
@@ -68,20 +86,24 @@ class Construction(GameServer):
             for col in range(cols):
                 if not is_tree_field(row, col, rows, cols):
                     continue
-                u0, u1 = col / cols, (col + 1) / cols
-                v0, v1 = row / rows, (row + 1) / rows
-                tree_fields[tree_field_name(row, col)] = Field(
-                    top_left=bilinear_point(game_field.top_left, game_field.top_right,
-                                            game_field.bottom_left, game_field.bottom_right, u0, v0),
-                    top_right=bilinear_point(game_field.top_left, game_field.top_right,
-                                             game_field.bottom_left, game_field.bottom_right, u1, v0),
-                    bottom_left=bilinear_point(game_field.top_left, game_field.top_right,
-                                               game_field.bottom_left, game_field.bottom_right, u0, v1),
-                    bottom_right=bilinear_point(game_field.top_left, game_field.top_right,
-                                                game_field.bottom_left, game_field.bottom_right, u1, v1),
-                )
+                tree_fields[tree_field_name(row, col)] = grid_part(
+                    game_field, col / cols, row / rows, (col + 1) / cols, (row + 1) / rows)
 
         return tree_fields
+
+    def generate_bases(self) -> Dict[str, Field]:
+        """
+        The bases are the grid cells that aren't tree fields (see is_tree_field): the rows between the first and
+        last one, in the first column for the construction site and in the last column for the environmentalists.
+        """
+        game_field = self.state_server.state.fields['game_field']
+        cols = self.game_config['tree_fields']['columns']
+        rows = self.game_config['tree_fields']['rows']
+        first, last = BASE_NAMES
+        return {
+            first: grid_part(game_field, 0, 1 / rows, 1 / cols, (rows - 1) / rows),
+            last: grid_part(game_field, (cols - 1) / cols, 1 / rows, 1, (rows - 1) / rows),
+        }
 
     def set_teams(self, teams: List[int]):
         colors = [BUILDER_COLOR, 'green']
@@ -180,7 +202,7 @@ class Construction(GameServer):
             self.penalized_fields |= newly_penalized_fields
 
         # Each material only scores the first time it is delivered, it keeps its points even if it leaves the site
-        construction_site_field = self.state_data.fields['construction_site']
+        construction_site_field = self.bases['construction_site']
         for material_id, material in self.state_data.objects['construction_material'].items():
             if material_id in self.delivered_materials:
                 continue
@@ -204,6 +226,8 @@ class Construction(GameServer):
 
     def to_json(self):
         result = super().to_json()
+        # The bases are generated from game_field like the tree fields. Any bases clicked in the tracker are replaced.
+        result['fields'].update({name: field.to_json() for name, field in (self.bases or {}).items()})
         # Tree fields are generated from game_field, so they are kept separate from the tracker's fields
         result['tree_fields'] = {
             name: {**field.to_json(), 'planted': self.is_tree_field_planted(field)}
@@ -219,6 +243,11 @@ class Construction(GameServer):
     @classmethod
     def to_model(cls, api: Api, game_config: Dict):
         result = super().to_model(api, game_config)
+        result['fields'] = fields.Nested(api.model(
+            'ConstructionFields',
+            {name: fields.Nested(Field.to_model(api), required=False)
+             for name in dict.fromkeys([*game_config['fields_names'], *BASE_NAMES])})
+        )
         rows, cols = game_config['tree_fields']['rows'], game_config['tree_fields']['columns']
         tree_field_model = api.inherit('TreeField', Field.to_model(api), {
             'planted': fields.Boolean(required=True, description='Whether a tree is planted in this field'),

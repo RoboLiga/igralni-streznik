@@ -63,11 +63,8 @@ def game(config, clock, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     state = StateLiveData(config)
-    # 5x4 grid of 100x100 tree fields, construction site to the right of the game field
-    state.fields = {
-        'game_field': rect(0, 0, 500, 400),
-        'construction_site': rect(600, 0, 700, 100),
-    }
+    # 7x4 grid of tree fields (~71.4 x 100). The construction site is x 0-71.4, y 100-300 (first column, middle rows).
+    state.fields = {'game_field': rect(0, 0, 500, 400)}
     state.robots = {BUILDER_ID: tracked(-50, -50), GREEN_ID: tracked(-50, -50)}
     state.objects = {
         'trees': {CHERRY_ID: tracked(50, 50), PINE_ID: tracked(150, 50)},
@@ -78,6 +75,7 @@ def game(config, clock, tmp_path, monkeypatch):
     construction.state_data = state
     # Normally done in _run once the first state update arrives
     construction.tree_fields = construction.generate_tree_fields()
+    construction.bases = construction.generate_bases()
     return construction
 
 
@@ -150,12 +148,34 @@ def test_tree_in_base_is_not_planted(game, clock, config):
     assert green(game).score == config['points']['cherry']
 
 
+def test_bases_are_the_grid_cells_that_are_not_tree_fields(game):
+    construction_site, environmentalists = game.bases['construction_site'], game.bases['environmentalists']
+    # First and last column of the two middle rows
+    for y in (110, 200, 290):
+        assert check_if_object_in_area(Point(35, y), construction_site)
+        assert check_if_object_in_area(Point(465, y), environmentalists)
+    # Not the corner tree fields above and below, nor the second column
+    for point in (Point(35, 50), Point(35, 350), Point(100, 200)):
+        assert not check_if_object_in_area(point, construction_site)
+    for point in (Point(465, 50), Point(465, 350), Point(400, 200)):
+        assert not check_if_object_in_area(point, environmentalists)
+
+
+def test_clicked_construction_site_is_ignored(game, config):
+    # A construction site still saved from an earlier tracker setup
+    game.state_data.fields['construction_site'] = rect(600, 0, 700, 100)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.update_game_state()
+    assert builder(game).score == 0
+
+
 def test_tree_fields_in_json(game, config):
     game.update_game_state()
     # Tracked stand-ins can't be serialized, only fields are checked here
     game.state_data.robots, game.state_data.objects, game.state_data.timestamp = {}, {}, 0
     result = game.to_json()
-    assert set(result['fields']) == {'game_field', 'construction_site'}
+    assert set(result['fields']) == {'game_field', 'construction_site', 'environmentalists'}
+    assert result['fields']['construction_site'] == game.bases['construction_site'].to_json()
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
     assert set(result['tree_fields']) == expected_tree_field_names(rows, cols)
     assert result['tree_fields']['tree_field_1_2'] == {
@@ -195,7 +215,7 @@ def test_tree_fields_in_model(config):
     rows, cols = config['tree_fields']['rows'], config['tree_fields']['columns']
     assert set(tree_model_fields) == expected_tree_field_names(rows, cols)
     assert 'planted' in tree_model_fields['tree_field_0_0'].nested
-    assert set(model['fields'].nested) == set(config['fields_names'])
+    assert set(model['fields'].nested) == {'game_field', 'construction_site', 'environmentalists'}
     tree_model = model['objects'].nested['trees'].nested[str(CHERRY_ID)].nested
     assert 'type' in tree_model and 'position' in tree_model
 
@@ -387,25 +407,25 @@ def test_delivered_materials_score(game, config):
     game.update_game_state()
     assert builder(game).score == 0
 
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.update_game_state()
     assert builder(game).score == config['points']['steel']
 
-    game.state_data.objects['construction_material'][BRICK_ID] = tracked(620, 80)
+    game.state_data.objects['construction_material'][BRICK_ID] = tracked(40, 250)
     game.update_game_state()
     assert builder(game).score == config['points']['steel'] + config['points']['brick']
     assert game.delivered_materials == {STEEL_ID, BRICK_ID}
 
 
 def test_delivered_material_scores_only_once_across_ticks(game, config):
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     for _ in range(5):
         game.update_game_state()
     assert builder(game).score == config['points']['steel']
 
 
 def test_material_leaving_site_keeps_points(game, config):
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.update_game_state()
 
     game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
@@ -415,17 +435,17 @@ def test_material_leaving_site_keeps_points(game, config):
 
 
 def test_redelivered_material_does_not_score_again(game, config):
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.update_game_state()
     game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
     game.update_game_state()
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(680, 20)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(20, 280)
     game.update_game_state()
     assert builder(game).score == config['points']['steel']
 
 
 def test_material_missing_from_state_keeps_points(game, config):
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.update_game_state()
     # The tracker can lose sight of a material, e.g. when the robot covers it
     del game.state_data.objects['construction_material'][STEEL_ID]
@@ -434,7 +454,7 @@ def test_material_missing_from_state_keeps_points(game, config):
 
 
 def test_delivered_points_survive_penalties(game, clock, config):
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.update_game_state()
     plant_trees(game, clock, config)
     game.state_data.objects['construction_material'][STEEL_ID] = tracked(800, 300)
@@ -445,7 +465,7 @@ def test_delivered_points_survive_penalties(game, clock, config):
 
 def test_builder_score_combines_materials_and_penalties(game, clock, config):
     plant_trees(game, clock, config)
-    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(30, 150)
     game.state_data.robots[BUILDER_ID] = tracked(160, 60)
     game.update_game_state()
     assert builder(game).score == config['points']['steel'] - config['points']['pine']
