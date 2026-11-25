@@ -53,7 +53,8 @@ def config():
 @pytest.fixture
 def clock(monkeypatch):
     fake_clock = FakeClock()
-    monkeypatch.setattr('src.games.construction.Construction.time.time', fake_clock)
+    # The game timer reads this clock, so game time follows it except while paused
+    monkeypatch.setattr('src.classes.Timer.timer', fake_clock)
     return fake_clock
 
 
@@ -78,6 +79,7 @@ def game(config, clock, tmp_path, monkeypatch):
     construction.state_data = state
     # Normally done in _run once the first state update arrives
     construction.tree_fields = construction.generate_tree_fields()
+    construction.start_game()
     return construction
 
 
@@ -364,6 +366,113 @@ def test_builder_sitting_in_field_is_penalized_for_first_planting(game, clock, c
     plant_trees(game, clock, config)
     assert PINE_ID not in game.planted_trees
     assert builder(game).score == -config['points']['pine']
+
+
+def two_trees_in_one_field(game, clock):
+    """The pine enters its field at (150, 50) a second before the cherry joins it."""
+    game.update_game_state()
+    clock.advance(1)
+    move_tree(game, CHERRY_ID, 200, 50)
+    game.update_game_state()
+
+
+def test_only_the_first_tree_in_a_field_is_planted(game, clock, config):
+    two_trees_in_one_field(game, clock)
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    assert set(game.planted_trees) == {PINE_ID}
+    assert green(game).score == config['points']['pine']
+
+
+def test_next_tree_starts_its_timer_when_the_first_leaves(game, clock, config):
+    two_trees_in_one_field(game, clock)
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+
+    move_tree(game, PINE_ID, 350, 250)
+    game.update_game_state()
+    # The cherry has been in the field long enough, but its timer only starts now
+    assert CHERRY_ID not in game.planted_trees
+    clock.advance(config['plant_min_time_seconds'] - 1)
+    game.update_game_state()
+    assert CHERRY_ID not in game.planted_trees
+
+    clock.advance(2)
+    game.update_game_state()
+    assert CHERRY_ID in game.planted_trees
+    assert green(game).score == config['points']['pine'] + config['points']['cherry']
+
+
+def test_ran_over_tree_stays_first_in_its_field(game, clock, config):
+    two_trees_in_one_field(game, clock)
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert builder(game).score == -config['points']['pine']
+
+    # The cherry doesn't move up: the pine's own timer starts again
+    game.update_game_state()
+    assert game.planted_trees == {}
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    assert set(game.planted_trees) == {PINE_ID}
+    # Replanted while the builder sat in the field, which doesn't cost them again
+    assert builder(game).score == -config['points']['pine']
+
+
+def test_pause_stops_planting_timers(game, clock, config):
+    game.update_game_state()
+    clock.advance(config['plant_min_time_seconds'] - 1)
+    game.pause_game()
+    clock.advance(100)
+    game.resume_game()
+    game.update_game_state()
+    assert game.planted_trees == {}
+
+    clock.advance(2)
+    game.update_game_state()
+    assert set(game.planted_trees) == {CHERRY_ID, PINE_ID}
+
+
+def test_restarted_game_times_trees_from_the_start(game, clock, config):
+    game.update_game_state()
+    clock.advance(100)
+    move_tree(game, PINE_ID, 350, 250)
+    game.update_game_state()
+    game.stop_game()
+
+    # Game time starts from zero again, so the pine's timer from 100 s in must not carry over
+    game.start_game()
+    game.update_game_state()
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    assert PINE_ID in game.planted_trees
+
+
+def test_restarted_game_starts_from_scratch(game, clock, config):
+    game.state_data.objects['construction_material'][STEEL_ID] = tracked(650, 50)
+    plant_trees(game, clock, config)
+    game.state_data.robots[BUILDER_ID] = tracked(160, 60)
+    game.update_game_state()
+    assert builder(game).score == config['points']['steel'] - config['points']['pine']
+    game.stop_game()
+
+    # Nothing from the first game carries over: not the deliveries, the penalties or the planted trees
+    del game.state_data.objects['construction_material'][STEEL_ID]
+    del game.state_data.robots[BUILDER_ID]
+    game.start_game()
+    game.update_game_state()
+    assert builder(game).score == 0
+    assert green(game).score == 0
+    assert game.planted_trees == {}
+
+    # Trees that scored in the first game score again in the new one
+    clock.advance(config['plant_min_time_seconds'] + 1)
+    game.update_game_state()
+    assert set(game.planted_trees) == {CHERRY_ID, PINE_ID}
+    assert green(game).score == config['points']['cherry'] + config['points']['pine']
 
 
 def test_missing_builder_does_not_crash(game, clock, config):
